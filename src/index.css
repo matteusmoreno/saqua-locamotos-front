@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Nova Configuração de tema Premium Dark para Saqua Locamotos */
+@theme {
+  /* Cores Principais */
+  --color-black-pure: #000000;
+  --color-black-rich: #050505; /* Fundo principal levemente mais suave */
+  
+  /* Tons de Cinza para cartões e profundidade */
+  --color-gray-darker: #0a0a0a;
+  --color-gray-dark: #111111;
+  --color-gray-mid: #1f1f1f;
+  
+  /* Cores de Destaque */
+  --color-brand-gold: #FACC15; /* Amarelo vibrante/Gold (yellow-400) */
+  --color-brand-gold-hover: #EAB308; /* Amarelo um pouco mais escuro (yellow-500) */
+  --color-brand-red: #EF4444; /* Vermelho energia (red-500) */
+  --color-brand-red-hover: #DC2626; /* Vermelho hover (red-600) */
+}
+
+/* Estilos globais básicos - Modo Escuro padrão */
+body {
+  background-color: var(--color-black-pure);
+  color: #f3f4f6; /* text-gray-100 para leitura confortável */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, sans-serif; /* Assumindo que está usando Inter */
+}
+
+/* Scrollbar personalizada dark */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-black-pure);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-mid);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-gold);
+}
