@@ -27,7 +27,8 @@ import { ContractList } from './pages/admin/ContractList';
 import { ContractRegistration } from './pages/admin/ContractRegistration';
 import { ContractDetail } from './pages/admin/ContractDetail';
 
-// Páginas Financeiras
+// Dashboard e Financeiro
+import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { FinancialDashboard } from './pages/admin/FinancialDashboard';
 
 function SiteLayout({ children }) {
@@ -70,7 +71,7 @@ function App() {
                     <ProtectedRoute allowedRoles={['ADMIN']}>
                       <AdminLayout>
                         <Routes>
-                          <Route path="dashboard" element={<div className="text-white text-2xl font-bold">Visão Geral (Em breve)</div>} />
+                          <Route path="dashboard" element={<AdminDashboard />} />
                           
                           <Route path="clientes" element={<CustomerList />} />
                           <Route path="clientes/novo" element={<CustomerRegistration />} />
