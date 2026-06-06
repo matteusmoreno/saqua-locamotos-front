@@ -19,6 +19,7 @@ import { CustomerEdit } from './pages/admin/CustomerEdit';
 // Páginas de Motos
 import { MotorcycleList } from './pages/admin/MotorcycleList';
 import { MotorcycleRegistration } from './pages/admin/MotorcycleRegistration';
+import { MotorcycleEdit } from './pages/admin/MotorcycleEdit'; // <-- 1. IMPORTAÇÃO ADICIONADA AQUI
 
 function SiteLayout({ children }) {
   const location = useLocation();
@@ -61,6 +62,7 @@ function App() {
                           
                           <Route path="motos" element={<MotorcycleList />} />
                           <Route path="motos/nova" element={<MotorcycleRegistration />} />
+                          <Route path="motos/:id/editar" element={<MotorcycleEdit />} /> {/* <-- 2. ROTA ADICIONADA AQUI */}
                           
                           <Route path="contratos" element={<div className="text-white">Contratos (Em breve)</div>} />
                           <Route path="financeiro" element={<div className="text-white">Financeiro (Em breve)</div>} />
