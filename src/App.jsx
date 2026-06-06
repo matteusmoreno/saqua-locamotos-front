@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Contextos
 import { AuthProvider } from './context/AuthContext';
@@ -24,6 +25,10 @@ import { MotorcycleEdit } from './pages/admin/MotorcycleEdit';
 // Páginas de Contratos
 import { ContractList } from './pages/admin/ContractList';
 import { ContractRegistration } from './pages/admin/ContractRegistration';
+import { ContractDetail } from './pages/admin/ContractDetail';
+
+// Páginas Financeiras
+import { FinancialDashboard } from './pages/admin/FinancialDashboard';
 
 function SiteLayout({ children }) {
   const location = useLocation();
@@ -47,6 +52,13 @@ function App() {
       <ConfirmProvider>
         <Router>
           <div className="flex flex-col min-h-screen bg-black-pure">
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: { background: '#050505', color: '#fff', border: '1px solid #1f1f1f' },
+                success: { iconTheme: { primary: '#FACC15', secondary: '#000' } },
+              }}
+            />
             <SiteLayout>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -70,8 +82,9 @@ function App() {
                           
                           <Route path="contratos" element={<ContractList />} />
                           <Route path="contratos/novo" element={<ContractRegistration />} />
+                          <Route path="contratos/:id" element={<ContractDetail />} />
                           
-                          <Route path="financeiro" element={<div className="text-white">Financeiro (Em breve)</div>} />
+                          <Route path="financeiro" element={<FinancialDashboard />} />
                           
                           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
                         </Routes>

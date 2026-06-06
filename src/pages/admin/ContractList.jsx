@@ -79,7 +79,7 @@ export function ContractList() {
     switch(status) {
       case 'ACTIVE': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-green-500/10 text-green-500 border border-green-500/20 uppercase">Ativo</span>;
       case 'FINISHED': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Finalizado</span>;
-      case 'CANCELED': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-brand-red/10 text-brand-red border border-brand-red/20 uppercase">Cancelado</span>;
+      case 'CANCELLED': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-brand-red/10 text-brand-red border border-brand-red/20 uppercase">Cancelado</span>;
       default: return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-gray-500/10 text-gray-400 border border-gray-500/20 uppercase">{status}</span>;
     }
   };
