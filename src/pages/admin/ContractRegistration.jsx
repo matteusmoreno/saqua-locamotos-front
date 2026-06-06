@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { ContractService } from '../../services/contractService';
 import { UserService } from '../../services/userService';
 import { MotorcycleService } from '../../services/motorcycleService';
+import { CurrencyInput } from '../../components/CurrencyInput';
 
 export function ContractRegistration() {
   const navigate = useNavigate();
@@ -16,11 +17,15 @@ export function ContractRegistration() {
   const [customers, setCustomers] = useState([]);
   const [motorcycles, setMotorcycles] = useState([]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, watch } = useForm({
+    defaultValues: { depositAmount: 0, weeklyAmount: 0 },
+  });
 
   useEffect(() => {
+    register('depositAmount', { required: true, min: 0.01 });
+    register('weeklyAmount', { required: true, min: 0.01 });
     fetchFormData();
-  }, []);
+  }, [register]);
 
   const fetchFormData = async () => {
     try {
@@ -49,8 +54,8 @@ export function ContractRegistration() {
         motorcycleId: data.motorcycleId,
         rentalType: data.rentalType,
         startDate: data.startDate,
-        depositAmount: parseFloat(data.depositAmount),
-        weeklyAmount: parseFloat(data.weeklyAmount)
+        depositAmount: Number(data.depositAmount),
+        weeklyAmount: Number(data.weeklyAmount),
       };
 
       await ContractService.createContract(payload);
@@ -122,13 +127,21 @@ export function ContractRegistration() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-gray-300">Caução (R$) *</label>
-            <input type="number" step="0.01" {...register('depositAmount', { required: true })} className="input-dark" />
+            <label className="text-sm font-semibold text-gray-300">Caução *</label>
+            <CurrencyInput
+              variant="dark"
+              value={watch('depositAmount')}
+              onChange={(val) => setValue('depositAmount', val, { shouldValidate: true })}
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-gray-300">Valor Semanal (R$) *</label>
-            <input type="number" step="0.01" {...register('weeklyAmount', { required: true })} className="input-dark" />
+            <label className="text-sm font-semibold text-gray-300">Valor Semanal *</label>
+            <CurrencyInput
+              variant="dark"
+              value={watch('weeklyAmount')}
+              onChange={(val) => setValue('weeklyAmount', val, { shouldValidate: true })}
+            />
           </div>
         </div>
 
@@ -140,8 +153,9 @@ export function ContractRegistration() {
       </form>
       
       <style>{`
-        .input-dark { width: 100%; background-color: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 0.75rem; padding: 0.875rem 1rem; color: white; } 
-        .input-dark:focus { outline: none; border-color: #FACC15; }
+        .input-dark { width: 100%; background-color: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 0.75rem; padding: 0.875rem 1rem; color: white; }
+        .input-dark.flex { padding: 0; }
+        .input-dark:focus, .input-dark:focus-within { outline: none; border-color: #FACC15; }
       `}</style>
     </div>
   );

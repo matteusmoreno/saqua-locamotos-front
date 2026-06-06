@@ -1,19 +1,48 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  TrendingDown, Loader2, Wrench, Zap, FileText, Shield, MoreHorizontal, Bike
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ExpenseService } from '../../services/expenseService';
 import { EXPENSE_TYPE_LABELS } from '../../utils/financialLabels';
+import { formatCurrency, formatDate } from '../../utils/formatCurrency';
+import { FinancialModalShell } from './financial/FinancialModalShell';
+import { TypeOptionGrid } from './financial/TypeOptionGrid';
+import {
+  FinancialFormField, FinancialSelect, FinancialCurrencyInput,
+  FinancialInput, FINANCIAL_INPUT_STYLES
+} from './financial/FinancialFormField';
+
+const EXPENSE_TYPE_OPTIONS = [
+  { value: 'MAINTENANCE', label: 'Manutenção', hint: 'Revisões e reparos', icon: Wrench },
+  { value: 'UTILITIES', label: 'Utilidades', hint: 'Combustível, lavagem', icon: Zap },
+  { value: 'TAXES', label: 'Impostos', hint: 'IPVA, licenciamento', icon: FileText },
+  { value: 'INSURANCE', label: 'Seguro', hint: 'Apólice e cobertura', icon: Shield },
+  { value: 'OTHER', label: 'Outros', hint: 'Demais custos', icon: MoreHorizontal },
+];
+
+const EMPTY_FORM = {
+  motorcycleId: '',
+  type: 'MAINTENANCE',
+  amount: 0,
+  dueDate: '',
+  description: '',
+};
 
 export function CreateExpenseModal({ isOpen, onClose, motorcycles = [], defaultMotorcycleId = '', onSuccess }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    motorcycleId: defaultMotorcycleId,
-    type: 'MAINTENANCE',
-    amount: '',
-    dueDate: '',
-    description: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  const selectedMotorcycle = useMemo(
+    () => motorcycles.find(m => m.motorcycleId === form.motorcycleId),
+    [motorcycles, form.motorcycleId]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({ ...EMPTY_FORM, motorcycleId: defaultMotorcycleId });
+    }
+  }, [isOpen, defaultMotorcycleId]);
 
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -26,12 +55,11 @@ export function CreateExpenseModal({ isOpen, onClose, motorcycles = [], defaultM
       await ExpenseService.createExpense({
         motorcycleId: form.motorcycleId,
         type: form.type,
-        amount: parseFloat(form.amount),
+        amount: Number(form.amount),
         dueDate: form.dueDate,
         description: form.description || undefined,
       });
       toast.success('Despesa criada com sucesso!');
-      setForm({ motorcycleId: defaultMotorcycleId, type: 'MAINTENANCE', amount: '', dueDate: '', description: '' });
       onSuccess?.();
       onClose();
     } catch (error) {
@@ -41,87 +69,134 @@ export function CreateExpenseModal({ isOpen, onClose, motorcycles = [], defaultM
     }
   };
 
-  if (!isOpen) return null;
+  const canSubmit = form.motorcycleId && form.amount > 0 && form.dueDate && !isSubmitting;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black-pure/80 backdrop-blur-md" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-lg bg-black-rich border border-gray-mid rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
-        >
-          <div className="p-6 pb-0 flex items-start justify-between sticky top-0 bg-black-rich z-10">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-brand-red/10 text-brand-red border border-brand-red/20">
-              <Plus size={24} />
-            </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1">
-              <X size={20} />
+    <>
+      <style>{FINANCIAL_INPUT_STYLES}</style>
+      <FinancialModalShell
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Nova Despesa"
+        subtitle="Registre um custo operacional vinculado a uma moto da frota."
+        icon={<TrendingDown size={22} />}
+        accent="red"
+        footer={
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-gray-darker hover:bg-gray-mid border border-gray-mid transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="create-expense-form"
+              disabled={!canSubmit}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-brand-gold hover:bg-brand-gold-hover text-black-pure transition-all shadow-[0_0_15px_rgba(250,204,21,0.25)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <TrendingDown size={18} />}
+              Criar Despesa
             </button>
           </div>
+        }
+      >
+        <form id="create-expense-form" onSubmit={handleSubmit} className="space-y-6">
+          <FinancialFormField label="Moto" required>
+            <FinancialSelect
+              value={form.motorcycleId}
+              onChange={(e) => handleChange('motorcycleId', e.target.value)}
+              placeholder="Selecione uma moto..."
+              required
+            >
+              {motorcycles.map(m => (
+                <option key={m.motorcycleId} value={m.motorcycleId}>
+                  {m.brand} {m.model} — {m.plate}
+                </option>
+              ))}
+            </FinancialSelect>
+          </FinancialFormField>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-1">Nova Despesa</h3>
-              <p className="text-gray-400 text-sm">Registrar um custo vinculado a uma moto da frota.</p>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-300">Moto *</label>
-              <select value={form.motorcycleId} onChange={(e) => handleChange('motorcycleId', e.target.value)} className="input-dark cursor-pointer" required>
-                <option value="">Selecione uma moto...</option>
-                {motorcycles.map(m => (
-                  <option key={m.motorcycleId} value={m.motorcycleId}>
-                    {m.brand} {m.model} — {m.plate}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-gray-300">Tipo *</label>
-                <select value={form.type} onChange={(e) => handleChange('type', e.target.value)} className="input-dark cursor-pointer" required>
-                  {Object.entries(EXPENSE_TYPE_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+          {selectedMotorcycle && (
+            <div className="flex items-center justify-between p-3 rounded-xl bg-gray-darker border border-gray-mid">
+              <div className="flex items-center gap-2 text-sm">
+                <Bike size={14} className="text-brand-red" />
+                <span className="text-white font-medium">{selectedMotorcycle.brand} {selectedMotorcycle.model}</span>
+                <span className="text-gray-500">· {selectedMotorcycle.plate}</span>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-gray-300">Valor (R$) *</label>
-                <input type="number" step="0.01" min="0.01" value={form.amount} onChange={(e) => handleChange('amount', e.target.value)} className="input-dark" required />
+              {selectedMotorcycle.financial?.total !== undefined && (
+                <span className={`text-xs font-bold ${Number(selectedMotorcycle.financial.total) >= 0 ? 'text-brand-gold' : 'text-brand-red'}`}>
+                  Saldo: {formatCurrency(selectedMotorcycle.financial.total)}
+                </span>
+              )}
+            </div>
+          )}
+
+          <FinancialFormField label="Categoria" required>
+            <TypeOptionGrid
+              options={EXPENSE_TYPE_OPTIONS}
+              value={form.type}
+              onChange={(type) => handleChange('type', type)}
+              columns={3}
+            />
+          </FinancialFormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FinancialFormField label="Valor" required>
+              <FinancialCurrencyInput
+                value={form.amount}
+                onChange={(val) => handleChange('amount', val)}
+              />
+            </FinancialFormField>
+            <FinancialFormField label="Vencimento" required>
+              <FinancialInput
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => handleChange('dueDate', e.target.value)}
+                required
+              />
+            </FinancialFormField>
+          </div>
+
+          <FinancialFormField label="Descrição" hint="Opcional">
+            <FinancialInput
+              type="text"
+              value={form.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="Ex: Troca de óleo e filtro"
+            />
+          </FinancialFormField>
+
+          {form.motorcycleId && form.amount > 0 && form.dueDate && (
+            <div className="rounded-2xl border border-brand-red/20 bg-brand-red/5 p-4 space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-brand-red">Resumo do lançamento</p>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Categoria</span>
+                <span className="text-white font-medium">{EXPENSE_TYPE_LABELS[form.type]}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Valor</span>
+                <span className="text-brand-red font-black">{formatCurrency(form.amount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Vence em</span>
+                <span className="text-white font-medium">{formatDate(form.dueDate)}</span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 text-xs text-gray-500">
+                <FileText size={12} />
+                Status inicial: <span className="text-yellow-500 font-semibold">Pendente</span>
               </div>
             </div>
+          )}
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-300">Data de Vencimento *</label>
-              <input type="date" value={form.dueDate} onChange={(e) => handleChange('dueDate', e.target.value)} className="input-dark" required />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-gray-300">Descrição</label>
-              <input type="text" value={form.description} onChange={(e) => handleChange('description', e.target.value)} className="input-dark" placeholder="Opcional" />
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={onClose} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-gray-darker hover:bg-gray-mid border border-gray-mid transition-colors">
-                Cancelar
-              </button>
-              <button type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-brand-gold hover:bg-brand-gold-hover text-black-pure transition-all disabled:opacity-50">
-                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
-                Criar
-              </button>
-            </div>
-          </form>
-
-          <style>{`
-            .input-dark { width: 100%; background-color: #0a0a0a; border: 1px solid #1f1f1f; border-radius: 0.75rem; padding: 0.875rem 1rem; color: white; }
-            .input-dark:focus { outline: none; border-color: #FACC15; }
-          `}</style>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+          {motorcycles.length === 0 && (
+            <p className="text-sm text-brand-red bg-brand-red/10 border border-brand-red/20 rounded-xl px-4 py-3">
+              Não há motos cadastradas na frota.
+            </p>
+          )}
+        </form>
+      </FinancialModalShell>
+    </>
   );
 }

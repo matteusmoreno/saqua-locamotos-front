@@ -211,7 +211,7 @@ export function ContractDetail() {
           </button>
           {contract.status === 'ACTIVE' && (
             <>
-              <button onClick={() => setShowCreatePayment(true)} className="flex items-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-brand-gold/20">
+              <button onClick={() => setShowCreatePayment(true)} className="flex items-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-brand-gold/20 cursor-pointer">
                 <Plus size={16} /> Novo Pagamento
               </button>
               <button onClick={handleFinishContract} className="flex items-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500/20">
