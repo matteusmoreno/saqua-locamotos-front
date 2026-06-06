@@ -19,7 +19,11 @@ import { CustomerEdit } from './pages/admin/CustomerEdit';
 // Páginas de Motos
 import { MotorcycleList } from './pages/admin/MotorcycleList';
 import { MotorcycleRegistration } from './pages/admin/MotorcycleRegistration';
-import { MotorcycleEdit } from './pages/admin/MotorcycleEdit'; // <-- 1. IMPORTAÇÃO ADICIONADA AQUI
+import { MotorcycleEdit } from './pages/admin/MotorcycleEdit';
+
+// Páginas de Contratos
+import { ContractList } from './pages/admin/ContractList';
+import { ContractRegistration } from './pages/admin/ContractRegistration';
 
 function SiteLayout({ children }) {
   const location = useLocation();
@@ -62,9 +66,11 @@ function App() {
                           
                           <Route path="motos" element={<MotorcycleList />} />
                           <Route path="motos/nova" element={<MotorcycleRegistration />} />
-                          <Route path="motos/:id/editar" element={<MotorcycleEdit />} /> {/* <-- 2. ROTA ADICIONADA AQUI */}
+                          <Route path="motos/:id/editar" element={<MotorcycleEdit />} />
                           
-                          <Route path="contratos" element={<div className="text-white">Contratos (Em breve)</div>} />
+                          <Route path="contratos" element={<ContractList />} />
+                          <Route path="contratos/novo" element={<ContractRegistration />} />
+                          
                           <Route path="financeiro" element={<div className="text-white">Financeiro (Em breve)</div>} />
                           
                           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
