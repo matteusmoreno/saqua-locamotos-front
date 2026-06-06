@@ -1,49 +1,79 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileText, Plus, Search, ShieldAlert, Loader2, Download, XCircle, CheckCircle } from 'lucide-react';
+import {
+  FileText, Plus, Search, ShieldAlert, Loader2, Download,
+  XCircle, ArrowRight, User, Bike, Calendar
+} from 'lucide-react';
 import toast from 'react-hot-toast';
+
 import { ContractService } from '../../services/contractService';
 import { useConfirm } from '../../context/ConfirmContext';
+import { ContractStatusBadge } from '../../components/admin/contracts/ContractStatusBadge';
+import { ContractProgressBar } from '../../components/admin/contracts/ContractProgressBar';
+import { RENTAL_TYPE_LABELS } from '../../utils/financialLabels';
+import { formatCurrency, formatDate } from '../../utils/formatCurrency';
+
+function StatPill({ label, value, color = 'text-white' }) {
+  return (
+    <div className="bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px]">
+      <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{label}</p>
+      <p className={`text-xl font-black ${color}`}>{value}</p>
+    </div>
+  );
+}
 
 export function ContractList() {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
   const { confirm } = useConfirm();
 
-  useEffect(() => {
-    fetchContracts();
-  }, []);
+  useEffect(() => { fetchContracts(); }, []);
 
   const fetchContracts = async () => {
     try {
       const response = await ContractService.getAllContracts();
-      setContracts(response.data);
+      setContracts(response.data || []);
     } catch (error) {
-      console.error("Erro ao buscar contratos:", error);
+      console.error(error);
       toast.error('Não foi possível carregar os contratos.');
     } finally {
       setLoading(false);
     }
   };
 
+  const stats = useMemo(() => ({
+    total: contracts.length,
+    active: contracts.filter(c => c.status === 'ACTIVE').length,
+    finished: contracts.filter(c => c.status === 'FINISHED').length,
+    cancelled: contracts.filter(c => c.status === 'CANCELLED').length,
+  }), [contracts]);
+
+  const filteredContracts = contracts.filter(c => {
+    const matchesSearch =
+      c.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.motorcycle?.plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.motorcycle?.model?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   const handleCancelContract = async (contractId) => {
-    const isConfirmed = await confirm({
+    const ok = await confirm({
       title: 'Cancelar Contrato',
-      message: 'Tem a certeza que deseja cancelar este contrato? Esta ação não pode ser desfeita.',
+      message: 'Tem certeza? Esta ação não pode ser desfeita.',
       confirmText: 'Sim, Cancelar',
-      isDanger: true
+      isDanger: true,
     });
-
-    if (!isConfirmed) return;
-
+    if (!ok) return;
     try {
       await ContractService.cancelContract(contractId);
-      toast.success('Contrato cancelado com sucesso!');
+      toast.success('Contrato cancelado!');
       fetchContracts();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao cancelar o contrato.');
     }
   };
@@ -51,104 +81,191 @@ export function ContractList() {
   const handleDownloadPdf = async (contractId) => {
     try {
       const response = await ContractService.generatePdf(contractId);
-      
-      // Cria um link temporário para forçar o download do Blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `contrato-${contractId}.pdf`);
       document.body.appendChild(link);
       link.click();
-      
-      // Limpeza
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
       toast.success('Download iniciado!');
-    } catch (error) {
-      toast.error('Erro ao gerar o PDF do contrato.');
+    } catch {
+      toast.error('Erro ao gerar PDF.');
     }
   };
 
-  const filteredContracts = contracts.filter(contract => 
-    contract.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contract.motorcycle?.plate?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'ACTIVE': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-green-500/10 text-green-500 border border-green-500/20 uppercase">Ativo</span>;
-      case 'FINISHED': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">Finalizado</span>;
-      case 'CANCELLED': return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-brand-red/10 text-brand-red border border-brand-red/20 uppercase">Cancelado</span>;
-      default: return <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-gray-500/10 text-gray-400 border border-gray-500/20 uppercase">{status}</span>;
-    }
-  };
+  const STATUS_TABS = [
+    { key: 'ALL', label: 'Todos' },
+    { key: 'ACTIVE', label: 'Ativos' },
+    { key: 'FINISHED', label: 'Finalizados' },
+    { key: 'CANCELLED', label: 'Cancelados' },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3"><FileText className="text-brand-gold" size={32} /> Contratos</h1>
-          <p className="text-gray-400">Faça a gestão dos contratos de locação das motos.</p>
+          <h1 className="text-3xl font-black text-white mb-1 flex items-center gap-3">
+            <FileText className="text-brand-gold" size={32} /> Contratos
+          </h1>
+          <p className="text-gray-400 text-sm">Gestão completa dos contratos de locação.</p>
         </div>
-        
-        <Link to="/admin/contratos/novo" className="flex items-center gap-2 bg-brand-gold hover:bg-brand-gold-hover text-black-pure px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(250,204,21,0.3)] transform hover:-translate-y-1">
+        <Link
+          to="/admin/contratos/novo"
+          className="flex items-center gap-2 bg-brand-gold hover:bg-brand-gold-hover text-black-pure px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(250,204,21,0.3)] cursor-pointer"
+        >
           <Plus size={20} /> Novo Contrato
         </Link>
       </div>
 
-      <div className="bg-black-rich border border-gray-mid p-4 rounded-2xl flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500"><Search size={20} /></div>
-          <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gray-darker border border-gray-mid focus:border-brand-gold focus:ring-1 focus:ring-brand-gold rounded-xl text-white placeholder:text-gray-500 transition-all outline-none" placeholder="Buscar por nome do cliente ou placa da moto..."/>
+      {!loading && (
+        <div className="flex flex-wrap gap-3">
+          <StatPill label="Total" value={stats.total} />
+          <StatPill label="Ativos" value={stats.active} color="text-green-500" />
+          <StatPill label="Finalizados" value={stats.finished} color="text-blue-400" />
+          <StatPill label="Cancelados" value={stats.cancelled} color="text-brand-red" />
+        </div>
+      )}
+
+      <div className="bg-black-rich border border-gray-mid rounded-2xl overflow-hidden">
+        <div className="flex overflow-x-auto border-b border-gray-mid">
+          {STATUS_TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              className={`px-5 py-3.5 text-sm font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                statusFilter === tab.key
+                  ? 'text-brand-gold border-b-2 border-brand-gold bg-brand-gold/5'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-darker'
+              }`}
+            >
+              {tab.label}
+              {tab.key === 'ACTIVE' && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-darker text-gray-500">{stats.active}</span>}
+              {tab.key === 'FINISHED' && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-darker text-gray-500">{stats.finished}</span>}
+              {tab.key === 'CANCELLED' && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-darker text-gray-500">{stats.cancelled}</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="p-4">
+          <div className="relative">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-gray-darker border border-gray-mid focus:border-brand-gold rounded-xl text-white placeholder:text-gray-500 outline-none transition-all text-sm"
+              placeholder="Buscar por cliente, placa ou modelo..."
+            />
+          </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20"><Loader2 size={48} className="animate-spin text-brand-gold mb-4" /><p className="text-gray-400">A carregar contratos...</p></div>
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 size={48} className="animate-spin text-brand-gold mb-4" />
+          <p className="text-gray-400">Carregando contratos...</p>
+        </div>
       ) : filteredContracts.length === 0 ? (
-        <div className="bg-black-rich border border-gray-mid rounded-3xl p-12 text-center flex flex-col items-center">
-          <ShieldAlert size={64} className="text-gray-600 mb-4" />
+        <div className="bg-black-rich border border-gray-mid rounded-3xl p-12 text-center">
+          <ShieldAlert size={56} className="text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-white mb-2">Nenhum contrato encontrado</h3>
-          {!searchTerm && <Link to="/admin/contratos/novo" className="text-brand-gold font-bold hover:underline">Criar primeiro contrato</Link>}
+          {!searchTerm && statusFilter === 'ALL' && (
+            <Link to="/admin/contratos/novo" className="text-brand-gold font-bold hover:underline cursor-pointer">
+              Criar primeiro contrato
+            </Link>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredContracts.map((contract) => (
-            <motion.div key={contract.contractId} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-black-rich border border-gray-mid hover:border-brand-gold/50 rounded-2xl p-6 transition-all hover:shadow-[0_10px_30px_rgba(250,204,21,0.05)] relative">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-white truncate max-w-[200px]">{contract.user?.name || 'Cliente'}</h3>
-                  <p className="text-brand-gold font-medium">{contract.motorcycle?.model} - {contract.motorcycle?.plate}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {filteredContracts.map((contract, index) => {
+            const payments = contract.payments || [];
+            const paidCount = payments.filter(p => p.status === 'PAID').length;
+
+            return (
+              <motion.div
+                key={contract.contractId}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04 }}
+                className="bg-black-rich border border-gray-mid hover:border-brand-gold/30 rounded-2xl overflow-hidden transition-all group"
+              >
+                <div className="p-5 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/5 to-transparent">
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center text-brand-gold font-black shrink-0">
+                        {contract.user?.name?.charAt(0) || 'C'}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-bold text-white truncate">{contract.user?.name || 'Cliente'}</h3>
+                        <p className="text-brand-gold text-sm font-medium">{contract.motorcycle?.brand} {contract.motorcycle?.model}</p>
+                      </div>
+                    </div>
+                    <ContractStatusBadge status={contract.status} />
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 text-xs text-gray-400">
+                    <span className="flex items-center gap-1.5"><Bike size={12} /> {contract.motorcycle?.plate}</span>
+                    <span className="flex items-center gap-1.5"><Calendar size={12} /> {RENTAL_TYPE_LABELS[contract.rentalType] || contract.rentalType}</span>
+                    <span className="flex items-center gap-1.5"><User size={12} /> {formatDate(contract.startDate)}</span>
+                  </div>
                 </div>
-                {getStatusBadge(contract.status)}
-              </div>
 
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-sm"><span className="text-gray-400">Tipo de Aluguel:</span> <span className="text-white font-medium">{contract.rentalType}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-400">Data de Início:</span> <span className="text-white">{contract.startDate}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-400">Valor Semanal:</span> <span className="text-brand-gold font-medium">R$ {contract.weeklyAmount?.toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-400">Caução Pago:</span> <span className={contract.depositPaid ? "text-green-400" : "text-brand-red"}>{contract.depositPaid ? "Sim" : "Não"}</span></div>
-              </div>
+                <div className="p-5 space-y-4">
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="bg-gray-darker rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase mb-1">Semanal</p>
+                      <p className="text-brand-gold font-black text-sm">{formatCurrency(contract.weeklyAmount)}</p>
+                    </div>
+                    <div className="bg-gray-darker rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase mb-1">Caução</p>
+                      <p className="text-white font-bold text-sm">{formatCurrency(contract.depositAmount)}</p>
+                    </div>
+                    <div className="bg-gray-darker rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase mb-1">Recebido</p>
+                      <p className="text-green-500 font-bold text-sm">{formatCurrency(contract.totalAmount)}</p>
+                    </div>
+                  </div>
 
-              <div className="pt-4 border-t border-gray-mid flex justify-between gap-3">
-                {contract.status === 'ACTIVE' && (
-                  <button onClick={() => handleCancelContract(contract.contractId)} className="flex items-center justify-center p-2 rounded-lg text-sm font-medium transition-colors bg-gray-dark hover:bg-brand-red/20 text-brand-red" title="Cancelar Contrato">
-                    <XCircle size={18} />
+                  {contract.status === 'ACTIVE' && (
+                    <ContractProgressBar startDate={contract.startDate} endDate={contract.endDate} />
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{paidCount}/{payments.length} pagamentos confirmados</span>
+                    <span className={contract.depositPaid ? 'text-green-500' : 'text-brand-red'}>
+                      Caução {contract.depositPaid ? 'paga' : 'pendente'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="px-5 py-4 border-t border-gray-mid/50 flex gap-2 bg-gray-darker/20">
+                  {contract.status === 'ACTIVE' && (
+                    <button
+                      onClick={() => handleCancelContract(contract.contractId)}
+                      className="p-2.5 rounded-lg bg-brand-red/10 text-brand-red hover:bg-brand-red/20 transition-colors cursor-pointer"
+                      title="Cancelar"
+                    >
+                      <XCircle size={18} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDownloadPdf(contract.contractId)}
+                    className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-lg bg-gray-dark hover:bg-gray-mid text-white text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    <Download size={16} /> PDF
                   </button>
-                )}
-                
-                <button onClick={() => handleDownloadPdf(contract.contractId)} className="flex-1 flex items-center justify-center gap-2 bg-gray-dark hover:bg-gray-mid text-white py-2 rounded-lg text-sm font-medium transition-colors">
-                  <Download size={16} /> Baixar PDF
-                </button>
-                
-                <Link to={`/admin/contratos/${contract.contractId}`} className="flex-1 flex items-center justify-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold py-2 rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-brand-gold/30">
-                  <FileText size={16} /> Detalhes
-                </Link>
-              </div>
-            </motion.div>
-          ))}
+                  <Link
+                    to={`/admin/contratos/${contract.contractId}`}
+                    className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-lg bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold text-sm font-bold transition-colors border border-brand-gold/20 cursor-pointer"
+                  >
+                    Detalhes <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </div>
