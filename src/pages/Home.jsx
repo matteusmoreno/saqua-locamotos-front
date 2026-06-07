@@ -1,119 +1,192 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, ShieldCheck, Zap, Gauge } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Wrench, Smartphone, FileCheck, MapPin, Scale, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Home() {
   return (
-    <div className="min-h-screen bg-black-pure pt-20">
-      {/* Hero Section - Estilo Premium Dark */}
-      <section className="relative h-[90vh] flex items-center justify-center overflow-hidden border-b border-gray-mid">
-        {/* Fundo com imagem de moto escura e gradiente agressivo */}
+    <div className="min-h-screen bg-[#050505] selection:bg-brand-gold selection:text-black pt-20">
+      
+      {/* 1. HERO SECTION - ULTRA CLEAN */}
+      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
+        {/* Background Image & Overlay */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1622199015096-7c30026e6f18?q=80&w=1920&auto=format&fit=crop" 
-            alt="Moto em fundo escuro" 
-            className="w-full h-full object-cover opacity-20 mix-blend-luminosity"
+            src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=1920&auto=format&fit=crop" 
+            alt="Moto" 
+            className="w-full h-full object-cover opacity-30 grayscale"
           />
-          {/* Radial Gradient para focar no texto e esconder bordas da imagem */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#000000_100%)]"></div>
-          {/* Gradiente inferior para o Vermelho sutil */}
-          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-brand-red/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/80 via-[#050505]/95 to-[#050505]"></div>
         </div>
-        
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          {/* Badge Superior */}
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 flex flex-col items-center text-center">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 bg-gray-darker border border-brand-red/30 text-brand-red px-4 py-1.5 rounded-full text-sm font-semibold mb-6 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-          >
-            <Gauge size={16} /> O melhor custo-benefício da Região dos Lagos
-          </motion.div>
-
-          <motion.h1 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-5xl md:text-8xl font-black text-white mb-8 leading-tight tracking-tighter"
-          >
-            Alugue sua moto <br />
-            sem burocracia. <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-gold via-white to-brand-gold [text-shadow:0_0_30px_rgba(250,204,21,0.5)]">
-              Acelere seus ganhos.
-            </span>
-          </motion.h1>
-          
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.4 }}
-            className="text-lg md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto font-light leading-relaxed"
-          >
-            Planos flexíveis com manutenção inclusa para entregadores e motoristas em Saquarema. Segurança total e suporte 24h para você rodar tranquilo.
-          </motion.p>
-
-          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="flex flex-col sm:flex-row justify-center gap-6 items-center"
+            transition={{ duration: 0.6 }}
           >
-            {/* CTA Principal - Amarelo */}
-            <Link to="/login" className="w-full sm:w-auto flex items-center justify-center gap-2.5 bg-brand-gold hover:bg-brand-gold-hover text-black-pure px-10 py-5 rounded-2xl font-black text-xl transition-all transform hover:scale-105 hover:-translate-y-1 shadow-[0_10px_30px_rgba(250,204,21,0.3)]">
-              Quero Alugar <ArrowRight size={22} />
-            </Link>
-            
-            {/* CTA Secundário - Vermelho sutil */}
-            <a href="#planos" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-transparent hover:bg-brand-red/10 text-white border-2 border-brand-red/50 hover:border-brand-red px-10 py-5 rounded-2xl font-bold text-xl transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-              Ver Tabela de Preços
-            </a>
+            <span className="text-brand-gold text-xs sm:text-sm font-black tracking-[0.2em] uppercase mb-6 block">
+              Locação Exclusiva em Saquarema
+            </span>
+            <h1 className="text-6xl sm:text-7xl md:text-8xl font-black text-white leading-[1.05] tracking-tighter mb-8">
+              Acelere seus <br />
+              <span className="text-brand-gold">ganhos hoje.</span>
+            </h1>
+            <p className="text-lg sm:text-xl text-gray-400 font-light max-w-2xl mx-auto mb-12">
+              Motos revisadas, seguradas e prontas para o asfalto. Sem aprovação de crédito complexa, apenas o que você precisa para rodar.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link 
+                to="/login" 
+                className="group flex items-center justify-center gap-3 bg-brand-gold hover:bg-yellow-400 text-black px-8 py-4 rounded-xl font-black text-lg transition-all w-full sm:w-auto"
+              >
+                Garantir minha moto
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <a 
+                href="#valores" 
+                className="group flex items-center justify-center gap-3 bg-transparent text-white border border-gray-800 hover:border-brand-gold hover:text-brand-gold px-8 py-4 rounded-xl font-bold text-lg transition-all w-full sm:w-auto"
+              >
+                Ver condições
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Seção de Features - Fundo Cinza Escuro */}
-      <section className="py-24 bg-gray-darker">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-sm font-bold text-brand-red uppercase tracking-widest mb-3">Vantagens Exclusivas</h2>
-            <p className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Tudo o que você precisa para rodar</p>
+      {/* 2. NUMBERS / PRICING - DIRECT TO THE POINT */}
+      <section id="valores" className="py-24 sm:py-32 bg-[#050505] border-t border-gray-900">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Texto Explicativo */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl sm:text-5xl font-black text-white mb-6 tracking-tight">
+                Plano <span className="text-brand-gold">Mensal.</span> <br />
+                Sem surpresas.
+              </h2>
+              <p className="text-gray-400 text-lg mb-8 leading-relaxed font-light">
+                Esqueça oficinas e documentação. Nosso plano é desenhado exclusivamente para quem usa a moto como ferramenta de trabalho, garantindo previsibilidade total.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  { icon: ShieldCheck, text: "Seguro total e rastreamento inclusos" },
+                  { icon: Wrench, text: "Manutenção preventiva por nossa conta" },
+                  { icon: Smartphone, text: "Suporte dedicado via WhatsApp" }
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center gap-4 text-white font-medium">
+                    <div className="bg-brand-gold/10 p-2 rounded-lg text-brand-gold">
+                      <item.icon size={20} />
+                    </div>
+                    {item.text}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Pricing Card Premium */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative p-[1px] rounded-3xl bg-gradient-to-b from-brand-gold/50 to-gray-900"
+            >
+              <div className="bg-[#0A0A0A] rounded-3xl p-8 sm:p-12 h-full flex flex-col justify-between">
+                <div>
+                  <span className="text-brand-gold text-sm font-bold uppercase tracking-widest mb-2 block">
+                    Modelo Único
+                  </span>
+                  <div className="flex items-baseline gap-2 mb-8">
+                    <span className="text-white text-3xl font-medium">R$</span>
+                    <span className="text-7xl font-black text-brand-gold tracking-tighter">300</span>
+                    <span className="text-gray-500 font-medium">/semana</span>
+                  </div>
+                  
+                  <div className="space-y-6 pt-8 border-t border-gray-800">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Caução de garantia</span>
+                      <span className="text-brand-gold font-bold text-xl">R$ 600,00</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400">Tempo mínimo</span>
+                      <span className="text-white font-bold text-xl">30 dias</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+          </div>
+        </div>
+      </section>
+
+      {/* 3. REQUIREMENTS - MODERN CARDS */}
+      <section className="py-24 sm:py-32 bg-[#0A0A0A] border-y border-gray-900">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight mb-4">
+              Tudo <span className="text-brand-gold">100% digital.</span>
+            </h2>
+            <p className="text-gray-400 text-lg font-light">
+              Envie os documentos abaixo e tenha seu cadastro analisado em poucas horas.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10">
-            <FeatureCard 
-              icon={<ShieldCheck size={40} className="text-black-pure" />}
-              title="Manutenção Completa" 
-              desc="Esqueça gastos com óleo, freios, relação e pneus. Nossa equipe cuida de tudo para você não parar."
+          <div className="grid sm:grid-cols-3 gap-6 sm:gap-8">
+            <DocCard 
+              icon={FileCheck}
+              title="CNH Digital"
+              desc="Categoria A válida. Obrigatório o envio do documento digital com QR Code."
             />
-            <FeatureCard 
-              icon={<Zap size={40} className="text-black-pure" />}
-              title="Aprovação Digital" 
-              desc="Processo 100% online e rápido. Sem papelada excessiva e aprovação facilitada para a categoria."
+            <DocCard 
+              icon={MapPin}
+              title="Comprovante"
+              desc="Residência no seu nome ou parentes de 1º grau (água, luz ou internet recente)."
             />
-            <FeatureCard 
-              icon={<Gauge size={40} className="text-black-pure" />}
-              title="Seguro e Rastreamento" 
-              desc="Rode protegido contra roubo e furto. Nossas motos contam com tecnologia de ponta em segurança."
+            <DocCard 
+              icon={Scale}
+              title="Antecedentes"
+              desc="Certidão negativa estadual ou federal emitida nos últimos 30 dias."
             />
           </div>
         </div>
       </section>
+
+      {/* 4. BOTTOM CTA */}
+      <section className="py-32 bg-[#050505]">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-4xl sm:text-6xl font-black text-white mb-8 tracking-tight">
+            Pronto para <span className="text-brand-gold">rodar?</span>
+          </h2>
+          <Link 
+            to="/login" 
+            className="inline-flex items-center justify-center gap-3 bg-brand-gold hover:bg-yellow-400 text-black px-10 py-5 rounded-xl font-black text-xl transition-transform hover:scale-105"
+          >
+            Fazer meu cadastro <ChevronRight size={24} />
+          </Link>
+        </div>
+      </section>
+      
     </div>
   );
 }
 
-// Componente FeatureCard atualizado para o tema dark/yellow
-function FeatureCard({ icon, title, desc }) {
+// Componente isolado para os cards de documento
+function DocCard({ icon: Icon, title, desc }) {
   return (
     <motion.div 
-      whileHover={{ y: -10, scale: 1.02 }}
-      className="bg-gray-dark p-10 rounded-3xl border border-gray-mid shadow-lg hover:border-brand-gold/30 hover:shadow-[0_10px_40px_rgba(250,204,21,0.1)] transition-all duration-300 ease-out group"
+      whileHover={{ y: -8 }}
+      className="bg-[#050505] border border-gray-900 p-8 sm:p-10 rounded-3xl group hover:border-brand-gold/40 transition-colors"
     >
-      <div className="bg-brand-gold w-20 h-20 rounded-2xl flex items-center justify-center mb-8 transform -rotate-6 group-hover:rotate-0 transition-transform shadow-[0_5px_15px_rgba(250,204,21,0.3)]">
-        {icon}
+      <div className="mb-6 inline-flex p-4 rounded-2xl bg-[#0A0A0A] border border-gray-800 text-brand-gold group-hover:bg-brand-gold group-hover:text-black transition-colors">
+        <Icon size={32} strokeWidth={2} />
       </div>
-      <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{title}</h3>
-      <p className="text-gray-400 leading-relaxed font-light">{desc}</p>
+      <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">{title}</h3>
+      <p className="text-gray-400 font-light leading-relaxed">{desc}</p>
     </motion.div>
   );
 }
