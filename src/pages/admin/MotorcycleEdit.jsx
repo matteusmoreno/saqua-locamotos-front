@@ -218,7 +218,7 @@ export function MotorcycleEdit() {
             <InputField label="Modelo"><input {...register('model')} className={inputClassName} /></InputField>
             <InputField label="Ano (Fabrico/Modelo)"><input {...register('year')} onChange={(e) => setValue('year', maskYear(e.target.value))} className={inputClassName} maxLength={9}/></InputField>
             <InputField label="Cor"><input {...register('color')} className={inputClassName} /></InputField>
-            <InputField label="Matrícula (Placa)"><input {...register('plate')} className={`${inputClassName} uppercase`} /></InputField>
+            <InputField label="Placa"><input {...register('plate')} className={`${inputClassName} uppercase`} /></InputField>
             <InputField label="Renavam"><input {...register('renavam')} className={inputClassName} /></InputField>
             <InputField label="Chassi"><input {...register('chassis')} className={`${inputClassName} uppercase`} /></InputField>
             <InputField label="Quilometragem Atual (km)"><input type="number" {...register('mileage')} className={inputClassName} min="0" /></InputField>
