@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +9,16 @@ import { formatCurrency } from '../../utils/formatCurrency';
 export function RegisterPaymentModal({ isOpen, onClose, payment, onSuccess }) {
   const [method, setMethod] = useState('PIX');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // NOVO: Efeito para fechar o modal com a tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

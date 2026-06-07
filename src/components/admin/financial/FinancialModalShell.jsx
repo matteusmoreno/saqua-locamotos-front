@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -15,6 +16,16 @@ const ACCENTS = {
 };
 
 export function FinancialModalShell({ isOpen, onClose, title, subtitle, icon, accent = 'gold', children, footer }) {
+  // NOVO: Efeito para fechar o modal com a tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
   const palette = ACCENTS[accent] || ACCENTS.gold;
 

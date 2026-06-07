@@ -267,10 +267,9 @@ export function MotorcycleList() {
                 </Link>
                 <button 
                   onClick={() => setDocModalMoto(moto)} 
-                  className="flex-1 flex items-center justify-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold py-2.5 rounded-lg text-sm font-bold transition-colors border border-brand-gold/20 relative"
+                  className="flex-1 flex items-center justify-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold py-2.5 rounded-lg text-sm font-bold transition-colors border border-brand-gold/20"
                 >
                   <FileText size={16} /> CRLV
-                  {moto.documentUrl && <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-brand-gold rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)] border border-black-pure"></span>}
                 </button>
               </div>
             </motion.div>
