@@ -87,8 +87,8 @@ export function MotorcycleRegistration() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <InputField label="Matrícula (Placa) *" error={errors.plate}>
-              <input {...register('plate', { required: 'Placa é obrigatória' })} className={`${inputClassName} uppercase`} placeholder="ABC-1234 ou ABC1D23" />
+            <InputField label="Placa *" error={errors.plate}>
+              <input {...register('plate', { required: 'Placa é obrigatória' })} className={`${inputClassName} uppercase`} placeholder="ABC1D23" />
             </InputField>
             
             <InputField label="Renavam *" error={errors.renavam}>

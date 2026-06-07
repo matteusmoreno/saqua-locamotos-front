@@ -97,7 +97,7 @@ export function AdminLayout({ children }) {
           <div className="flex items-center gap-4">
             <div className="text-right hidden md:block">
               <p className="text-sm font-bold text-white">{user?.name || 'Administrador'}</p>
-              <p className="text-xs text-brand-gold uppercase tracking-wider">Gestor</p>
+              <p className="text-xs text-brand-gold uppercase tracking-wider">Administrador</p>
             </div>
             <div className="h-10 w-10 rounded-full bg-gray-darker border-2 border-brand-gold flex items-center justify-center text-brand-gold font-bold">
               {user?.name ? user.name.charAt(0) : 'A'}

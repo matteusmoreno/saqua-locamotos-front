@@ -168,7 +168,7 @@ export function MotorcycleList() {
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
               className="w-full pl-11 pr-4 py-3 bg-gray-darker border border-gray-mid focus:border-brand-gold rounded-xl text-white placeholder:text-gray-500 outline-none transition-all text-sm" 
-              placeholder="Buscar por marca, modelo ou matrícula (placa)..."
+              placeholder="Buscar por marca, modelo ou placa..."
             />
           </div>
         </div>
@@ -237,7 +237,7 @@ export function MotorcycleList() {
               <div className="p-5 flex-1">
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold flex items-center gap-1"><Hash size={12}/> Matrícula</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold flex items-center gap-1"><Hash size={12}/> Placa</span>
                     <span className="text-white font-mono bg-gray-darker px-2 py-1 rounded inline-block w-max text-sm border border-gray-mid">{moto.plate}</span>
                   </div>
                   <div className="flex flex-col gap-1">

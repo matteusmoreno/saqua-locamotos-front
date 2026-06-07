@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:9292', 
+  baseURL: 'https://saqualocamotosbackend-m0ge32fj.b4a.run/', 
   headers: {
     'Content-Type': 'application/json',
   },

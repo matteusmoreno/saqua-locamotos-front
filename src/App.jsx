@@ -31,6 +31,8 @@ import { ContractDetail } from './pages/admin/ContractDetail';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { FinancialDashboard } from './pages/admin/FinancialDashboard';
 
+import { AdminProfile } from './pages/admin/AdminProfile';
+
 function SiteLayout({ children }) {
   const location = useLocation();
   const isSitePage = !location.pathname.startsWith('/admin') && location.pathname !== '/login';
@@ -76,6 +78,8 @@ function App() {
                           <Route path="clientes" element={<CustomerList />} />
                           <Route path="clientes/novo" element={<CustomerRegistration />} />
                           <Route path="clientes/:id/editar" element={<CustomerEdit />} />
+
+                          <Route path="perfil" element={<AdminProfile />} />
                           
                           <Route path="motos" element={<MotorcycleList />} />
                           <Route path="motos/nova" element={<MotorcycleRegistration />} />
