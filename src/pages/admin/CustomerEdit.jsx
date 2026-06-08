@@ -7,13 +7,7 @@ import { maskCpf, maskPhone, maskCep } from '../../utils/masks';
 import { UserService } from '../../services/userService';
 import { AddressService } from '../../services/addressService';
 import { CustomerDocumentsModal } from '../../components/admin/CustomerDocumentsModal';
-
-const VALID_DOC_KEYS = ['cnh', 'rg', 'cpf', 'proof_of_residence', 'criminal_record', 'passport'];
-
-function countValidDocs(docs) {
-  if (!docs) return 0;
-  return VALID_DOC_KEYS.filter(key => docs[key] && typeof docs[key] === 'string' && docs[key].trim() !== '').length;
-}
+import { countValidDocuments } from '../../utils/userDocuments';
 
 export function CustomerEdit() {
   const { id } = useParams();
@@ -143,7 +137,7 @@ export function CustomerEdit() {
 
   const inputClassName = "w-full bg-gray-darker border border-gray-mid focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/50 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 transition-all outline-none";
 
-  const validDocsCount = countValidDocs(userDocuments);
+  const validDocsCount = countValidDocuments(userDocuments);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

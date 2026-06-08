@@ -16,11 +16,13 @@ import { AdminLayout } from './components/admin/AdminLayout';
 import { CustomerList } from './pages/admin/CustomerList';
 import { CustomerRegistration } from './pages/admin/CustomerRegistration';
 import { CustomerEdit } from './pages/admin/CustomerEdit';
+import { CustomerDetail } from './pages/admin/CustomerDetail';
 
 // Páginas de Motos
 import { MotorcycleList } from './pages/admin/MotorcycleList';
 import { MotorcycleRegistration } from './pages/admin/MotorcycleRegistration';
 import { MotorcycleEdit } from './pages/admin/MotorcycleEdit';
+import { MotorcycleDetail } from './pages/admin/MotorcycleDetail';
 
 // Páginas de Contratos
 import { ContractList } from './pages/admin/ContractList';
@@ -77,12 +79,14 @@ function App() {
                           
                           <Route path="clientes" element={<CustomerList />} />
                           <Route path="clientes/novo" element={<CustomerRegistration />} />
+                          <Route path="clientes/:id" element={<CustomerDetail />} />
                           <Route path="clientes/:id/editar" element={<CustomerEdit />} />
 
                           <Route path="perfil" element={<AdminProfile />} />
                           
                           <Route path="motos" element={<MotorcycleList />} />
                           <Route path="motos/nova" element={<MotorcycleRegistration />} />
+                          <Route path="motos/:id" element={<MotorcycleDetail />} />
                           <Route path="motos/:id/editar" element={<MotorcycleEdit />} />
                           
                           <Route path="contratos" element={<ContractList />} />

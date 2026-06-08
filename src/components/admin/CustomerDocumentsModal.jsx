@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Trash2, Eye, FileText, Loader2, CheckCircle, FileUp } from 'lucide-react';
+import { X, Upload, Trash2, Eye, FileText, Loader2, CheckCircle, FileUp, Clock3, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserService } from '../../services/userService';
+import { normalizeUserDocuments } from '../../utils/userDocuments';
+import { useConfirm } from '../../context/ConfirmContext';
 
 const DOCUMENT_TYPES = [
   { key: 'cnh', label: 'Carta de Condução (CNH)' },
@@ -16,7 +18,15 @@ const DOCUMENT_TYPES = [
 export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs = {}, onUpdateSuccess }) {
   const [selectedFiles, setSelectedFiles] = useState({});
   const [isUploading, setIsUploading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingKey, setDeletingKey] = useState('');
+  const normalizedDocs = normalizeUserDocuments(existingDocs);
+  const { confirm } = useConfirm();
+
+  const uploadedCount = useMemo(() => {
+    return DOCUMENT_TYPES.filter((doc) => normalizedDocs[doc.key]).length;
+  }, [normalizedDocs]);
+
+  const pendingCount = Object.keys(selectedFiles).length;
 
   // NOVO: Efeito para fechar o modal com a tecla ESC
   useEffect(() => {
@@ -70,9 +80,18 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
   };
 
   const handleDeleteDocument = async (typeKey) => {
-    if (!window.confirm('Tem a certeza que deseja eliminar este documento?')) return;
-    
-    setIsDeleting(true);
+    const docLabel = DOCUMENT_TYPES.find((doc) => doc.key === typeKey)?.label || 'documento';
+    const canDelete = await confirm({
+      title: 'Eliminar Documento',
+      message: `Tem a certeza que deseja eliminar ${docLabel}? Esta acao nao pode ser desfeita.`,
+      confirmText: 'Sim, eliminar',
+      cancelText: 'Cancelar',
+      isDanger: true,
+    });
+
+    if (!canDelete) return;
+
+    setDeletingKey(typeKey);
     try {
       const response = await UserService.deleteDocuments(userId, [typeKey]);
       toast.success('Documento eliminado com sucesso!');
@@ -81,13 +100,13 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
       console.error(error);
       toast.error('Erro ao eliminar documento.');
     } finally {
-      setIsDeleting(false);
+      setDeletingKey('');
     }
   };
 
   if (!isOpen) return null;
 
-  const hasFilesToUpload = Object.keys(selectedFiles).length > 0;
+  const hasFilesToUpload = pendingCount > 0;
 
   return (
     <AnimatePresence>
@@ -100,7 +119,7 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
           className="absolute inset-0 bg-black-pure/80 backdrop-blur-sm"
         />
         
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -113,7 +132,7 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
               </div>
               <div>
                 <h2 className="text-xl font-bold text-white">Gestão de Documentos</h2>
-                <p className="text-sm text-gray-400">Anexe ou elimine os documentos legais do locatário.</p>
+                <p className="text-sm text-gray-400">Gerencie anexos com segurança e acompanhamento em tempo real.</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-white bg-gray-dark hover:bg-gray-mid rounded-xl transition-colors">
@@ -121,9 +140,27 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
             </button>
           </div>
 
+          <div className="px-6 py-4 border-b border-gray-mid/50 bg-gray-darker/30 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="rounded-xl border border-gray-mid/50 bg-black-pure/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Documentos enviados</p>
+              <p className="text-lg font-black text-green-500">{uploadedCount}/{DOCUMENT_TYPES.length}</p>
+            </div>
+            <div className="rounded-xl border border-gray-mid/50 bg-black-pure/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Pendentes de envio</p>
+              <p className="text-lg font-black text-brand-gold">{pendingCount}</p>
+            </div>
+            <div className="rounded-xl border border-gray-mid/50 bg-black-pure/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Status geral</p>
+              <p className="text-sm font-bold text-gray-200 flex items-center gap-2 mt-1">
+                {uploadedCount > 0 ? <ShieldCheck size={14} className="text-green-500" /> : <Clock3 size={14} className="text-orange-400" />}
+                {uploadedCount > 0 ? 'Com anexos' : 'Sem anexos'}
+              </p>
+            </div>
+          </div>
+
           <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
             {DOCUMENT_TYPES.map((docType) => {
-              const existingUrl = existingDocs ? existingDocs[docType.key] : null;
+              const existingUrl = normalizedDocs[docType.key] || null;
               const pendingFile = selectedFiles[docType.key];
 
               return (
@@ -151,11 +188,11 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
                         </a>
                         <button 
                           onClick={() => handleDeleteDocument(docType.key)}
-                          disabled={isDeleting}
+                          disabled={Boolean(deletingKey)}
                           className="p-2.5 text-brand-red bg-brand-red/10 border border-brand-red/20 hover:bg-brand-red hover:text-white rounded-xl transition-all disabled:opacity-50"
                           title="Eliminar documento"
                         >
-                          {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          {deletingKey === docType.key ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>
                       </>
                     ) : pendingFile ? (
@@ -193,7 +230,7 @@ export function CustomerDocumentsModal({ isOpen, onClose, userId, existingDocs =
 
           <div className="p-6 border-t border-gray-mid bg-gray-darker/50 shrink-0 flex justify-between items-center">
             <span className="text-sm font-medium text-gray-400">
-              {hasFilesToUpload ? <span className="text-brand-gold">{Object.keys(selectedFiles).length} ficheiro(s) pronto(s) para enviar.</span> : 'Nenhuma alteração pendente.'}
+              {hasFilesToUpload ? <span className="text-brand-gold">{pendingCount} ficheiro(s) pronto(s) para enviar.</span> : 'Nenhuma alteração pendente.'}
             </span>
             <button 
               onClick={handleUploadAll}

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { cloneElement, isValidElement } from 'react';
 
 const COLORS = {
   gold: { icon: 'text-brand-gold bg-brand-gold/10 border-brand-gold/20', accent: 'text-brand-gold' },
@@ -10,16 +11,23 @@ const COLORS = {
 
 export function FinancialKpiCard({ icon, label, value, sub, hint, trend, color = 'gold', delay = 0, highlight }) {
   const palette = COLORS[color] || COLORS.gold;
+  const watermarkIcon = isValidElement(icon)
+    ? cloneElement(icon, {
+        size: 108,
+        className: `absolute -bottom-5 -right-5 opacity-5 ${palette.accent} pointer-events-none transform transition-transform duration-500 group-hover:scale-110`,
+      })
+    : null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className={`relative bg-black-rich border rounded-2xl p-5 overflow-hidden transition-colors ${
+      className={`group relative bg-black-rich border rounded-2xl p-5 overflow-hidden transition-colors ${
         highlight ? 'border-brand-gold/40 shadow-[0_0_20px_rgba(250,204,21,0.08)]' : 'border-gray-mid hover:border-gray-mid/80'
       }`}
     >
+      {watermarkIcon}
       {highlight && (
         <div className="absolute top-0 right-0 w-24 h-24 bg-brand-gold/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
       )}

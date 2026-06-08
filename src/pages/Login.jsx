@@ -5,7 +5,7 @@ import * as yup from 'yup';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Mail, Lock, ArrowLeft, UserCheck, Zap, KeyRound, ShieldCheck, X, Loader2, Send } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import Logo from '../assets/saqua-locamotos-logo.png';
 
 // Importando o contexto de autenticação que criamos
@@ -96,13 +96,14 @@ export function Login() {
       // Chama a função de login do nosso AuthContext
       const userLogged = await login({ email: data.email, password: data.password });
       
-      toast.success(`Bem-vindo ao sistema!`);
+      toast.dismiss();
+      toast.success('Bem-vindo ao sistema!', { duration: 1800 });
       
       // Redireciona baseado no perfil (Ajuste 'ADMIN' para a role exata que seu Quarkus retorna)
       if (userLogged?.role === 'ADMIN') {
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
       } else {
-        navigate('/app/locatario'); // Rota futura para clientes comuns
+        navigate('/app/locatario', { replace: true }); // Rota futura para clientes comuns
       }
     } catch (error) {
       console.error(error);
@@ -118,15 +119,6 @@ export function Login() {
 
   return (
     <div className="min-h-screen flex bg-black-pure text-white">
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          style: { background: '#1f1f1f', color: '#fff', border: '1px solid #333' },
-          success: { iconTheme: { primary: '#FACC15', secondary: '#000' } },
-          error: { iconTheme: { primary: '#EF4444', secondary: '#fff' } }
-        }}
-      />
-      
       {/* Lado Esquerdo - Formulário Dark */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 sm:p-12 relative border-r border-gray-mid bg-black-rich">
         <Link 

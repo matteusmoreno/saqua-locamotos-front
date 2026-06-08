@@ -1,25 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Users, Plus, Search, Phone, Mail, MapPin, 
-  ShieldAlert, Loader2, Edit, Camera, FileCheck, FileWarning
+  ShieldAlert, Loader2, FileCheck, FileWarning, Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UserService } from '../../services/userService';
-import { CustomerDocumentsModal } from '../../components/admin/CustomerDocumentsModal';
+import { countValidDocuments } from '../../utils/userDocuments';
 
-// Lista exata das chaves de documentos para evitar contar IDs ou metadados da API
-const VALID_DOC_KEYS = ['cnh', 'rg', 'cpf', 'proof_of_residence', 'criminal_record', 'passport'];
-
-function countValidDocs(docs) {
-  if (!docs) return 0;
-  return VALID_DOC_KEYS.filter(key => docs[key] && typeof docs[key] === 'string' && docs[key].trim() !== '').length;
-}
-
-function StatPill({ label, value, color = 'text-white' }) {
+function StatPill({ icon: Icon, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px] flex-1 sm:flex-none">
+    <div className="relative overflow-hidden bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px] flex-1 sm:flex-none group">
+      {Icon && <Icon size={42} className="absolute -bottom-2 -right-2 text-gray-600/20 group-hover:scale-110 transition-transform" />}
       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{label}</p>
       <p className={`text-xl font-black ${color}`}>{value}</p>
     </div>
@@ -30,8 +23,7 @@ export function CustomerList() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const [docModalCustomer, setDocModalCustomer] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCustomers();
@@ -55,34 +47,15 @@ export function CustomerList() {
     customer.cpf?.includes(searchTerm)
   );
 
-  const handleDocsUpdated = (updatedDocs) => {
-    setCustomers(prevCustomers => 
-      prevCustomers.map(customer => 
-        customer.customerId === docModalCustomer.customerId 
-          ? { ...customer, documents: updatedDocs } 
-          : customer
-      )
-    );
-  };
-
   const stats = useMemo(() => {
     const total = customers.length;
-    const withDocs = customers.filter(c => countValidDocs(c.documents) > 0).length;
+    const withDocs = customers.filter(c => countValidDocuments(c.documents) > 0).length;
     const pendingDocs = total - withDocs;
     return { total, withDocs, pendingDocs };
   }, [customers]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      
-      <CustomerDocumentsModal 
-        isOpen={!!docModalCustomer}
-        onClose={() => setDocModalCustomer(null)}
-        userId={docModalCustomer?.customerId}
-        existingDocs={docModalCustomer?.documents || {}}
-        onUpdateSuccess={handleDocsUpdated}
-      />
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-white mb-1 flex items-center gap-3">
@@ -98,9 +71,9 @@ export function CustomerList() {
 
       {!loading && (
         <div className="flex flex-wrap gap-3">
-          <StatPill label="Total Clientes" value={stats.total} />
-          <StatPill label="Com Documentos" value={stats.withDocs} color="text-green-500" />
-          <StatPill label="Docs Pendentes" value={stats.pendingDocs} color="text-orange-400" />
+          <StatPill icon={Users} label="Total Clientes" value={stats.total} />
+          <StatPill icon={FileCheck} label="Com Documentos" value={stats.withDocs} color="text-green-500" />
+          <StatPill icon={FileWarning} label="Docs Pendentes" value={stats.pendingDocs} color="text-orange-400" />
         </div>
       )}
 
@@ -140,7 +113,7 @@ export function CustomerList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredCustomers.map((customer, index) => {
-            const docsCount = countValidDocs(customer.documents);
+            const docsCount = countValidDocuments(customer.documents);
             const hasDocs = docsCount > 0;
 
             return (
@@ -149,8 +122,18 @@ export function CustomerList() {
                 initial={{ opacity: 0, y: 16 }} 
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: index * 0.04 }} 
-                className="bg-black-rich border border-gray-mid hover:border-brand-gold/50 rounded-2xl overflow-hidden transition-all group flex flex-col"
+                onClick={() => navigate(`/admin/clientes/${customer.customerId}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/admin/clientes/${customer.customerId}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="relative bg-black-rich border border-gray-mid hover:border-brand-gold/60 rounded-2xl overflow-hidden transition-all group flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
               >
+                <Users className="absolute -bottom-5 -right-5 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                 <div className="p-5 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/5 to-transparent flex items-start justify-between">
                   <div className="flex gap-4 items-center min-w-0">
                     <div className="relative shrink-0">
@@ -196,20 +179,11 @@ export function CustomerList() {
                   </div>
                 </div>
 
-                <div className="px-5 py-4 border-t border-gray-mid/50 flex gap-2 bg-gray-darker/20 mt-auto">
-                  <Link 
-                    to={`/admin/clientes/${customer.customerId}/editar`} 
-                    className="flex-1 flex items-center justify-center gap-2 bg-gray-dark hover:bg-gray-mid text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <Edit size={16} /> Editar
-                  </Link>
-                  
-                  <button 
-                    onClick={() => setDocModalCustomer(customer)}
-                    className="flex-1 flex items-center justify-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold py-2.5 rounded-lg text-sm font-bold transition-colors border border-brand-gold/20"
-                  >
-                    <Camera size={16} /> Docs
-                  </button>
+                <div className="px-5 py-4 border-t border-gray-mid/50 mt-auto bg-gray-darker/20 flex items-center justify-between text-xs">
+                  <span className="text-gray-500">Toque para abrir detalhes</span>
+                  <span className="inline-flex items-center gap-1.5 text-brand-gold font-bold">
+                    <Eye size={14} /> Ver perfil
+                  </span>
                 </div>
               </motion.div>
             );

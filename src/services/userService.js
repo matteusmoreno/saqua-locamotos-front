@@ -5,6 +5,7 @@ export const UserService = {
   getAllCustomers: () => api.get('/users/customers/all'),
   getUserById: (id) => api.get(`/users/${id}`),
   getCustomerById: (id) => api.get(`/users/${id}`),
+  getUserContracts: (id) => api.get(`/users/${id}/contracts`),
   
   // POST / PUT
   createCustomer: (data) => api.post('/users/customer/create', data),

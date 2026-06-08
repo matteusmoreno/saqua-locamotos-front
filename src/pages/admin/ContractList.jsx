@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FileText, Plus, Search, ShieldAlert, Loader2, Download,
-  XCircle, ArrowRight, User, Bike, Calendar
+  XCircle, ArrowRight, User, Bike, Calendar, CheckCircle, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -14,9 +14,10 @@ import { ContractProgressBar } from '../../components/admin/contracts/ContractPr
 import { RENTAL_TYPE_LABELS } from '../../utils/financialLabels';
 import { formatCurrency, formatDate } from '../../utils/formatCurrency';
 
-function StatPill({ label, value, color = 'text-white' }) {
+function StatPill({ icon: Icon, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px]">
+    <div className="relative overflow-hidden bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px] group">
+      {Icon && <Icon size={42} className="absolute -bottom-2 -right-2 text-gray-600/20 group-hover:scale-110 transition-transform" />}
       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{label}</p>
       <p className={`text-xl font-black ${color}`}>{value}</p>
     </div>
@@ -121,10 +122,10 @@ export function ContractList() {
 
       {!loading && (
         <div className="flex flex-wrap gap-3">
-          <StatPill label="Total" value={stats.total} />
-          <StatPill label="Ativos" value={stats.active} color="text-green-500" />
-          <StatPill label="Finalizados" value={stats.finished} color="text-blue-400" />
-          <StatPill label="Cancelados" value={stats.cancelled} color="text-brand-red" />
+          <StatPill icon={FileText} label="Total" value={stats.total} />
+          <StatPill icon={CheckCircle} label="Ativos" value={stats.active} color="text-green-500" />
+          <StatPill icon={CheckCircle} label="Finalizados" value={stats.finished} color="text-blue-400" />
+          <StatPill icon={AlertTriangle} label="Cancelados" value={stats.cancelled} color="text-brand-red" />
         </div>
       )}
 
@@ -189,8 +190,9 @@ export function ContractList() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="bg-black-rich border border-gray-mid hover:border-brand-gold/30 rounded-2xl overflow-hidden transition-all group"
+                className="relative bg-black-rich border border-gray-mid hover:border-brand-gold/30 rounded-2xl overflow-hidden transition-all group"
               >
+                <FileText className="absolute -bottom-5 -right-5 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                 <div className="p-5 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/5 to-transparent">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3 min-w-0">

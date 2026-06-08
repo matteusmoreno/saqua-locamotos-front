@@ -1,15 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bike, Plus, Search, Gauge, Hash, Fingerprint, ShieldAlert, Loader2, Edit, FileText, Power, PowerOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Bike, Plus, Search, Gauge, Hash, Fingerprint, ShieldAlert, Loader2, CheckCircle2, AlertCircle, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { MotorcycleService } from '../../services/motorcycleService';
-import { useConfirm } from '../../context/ConfirmContext';
-import { MotorcycleDocumentModal } from '../../components/admin/MotorcycleDocumentModal';
 
-function StatPill({ label, value, color = 'text-white' }) {
+function StatPill({ icon: Icon, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px] flex-1 sm:flex-none">
+    <div className="relative overflow-hidden bg-gray-darker/50 border border-gray-mid/50 rounded-xl px-4 py-3 text-center min-w-[100px] flex-1 sm:flex-none group">
+      {Icon && <Icon size={42} className="absolute -bottom-2 -right-2 text-gray-600/20 group-hover:scale-110 transition-transform" />}
       <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{label}</p>
       <p className={`text-xl font-black ${color}`}>{value}</p>
     </div>
@@ -21,9 +20,7 @@ export function MotorcycleList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  
-  const [docModalMoto, setDocModalMoto] = useState(null);
-  const { confirm } = useConfirm();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMotorcycles();
@@ -39,40 +36,6 @@ export function MotorcycleList() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleMotorcycleStatus = async (motorcycle) => {
-    const isActivating = !motorcycle.active;
-    
-    const isConfirmed = await confirm({
-      title: isActivating ? 'Ativar Motocicleta' : 'Desativar Motocicleta',
-      message: isActivating 
-        ? `Tem a certeza que deseja colocar a moto ${motorcycle.plate} disponível novamente?`
-        : `Tem a certeza que deseja desativar a moto ${motorcycle.plate}? O seu registo será mantido, mas não poderá ser alugada.`,
-      confirmText: isActivating ? 'Sim, Ativar' : 'Sim, Desativar',
-      isDanger: !isActivating
-    });
-
-    if (!isConfirmed) return;
-
-    try {
-      if (motorcycle.active) {
-        await MotorcycleService.disableMotorcycle(motorcycle.motorcycleId);
-        toast.success('Moto desativada com sucesso!');
-      } else {
-        await MotorcycleService.enableMotorcycle(motorcycle.motorcycleId);
-        toast.success('Moto ativada com sucesso!');
-      }
-      fetchMotorcycles();
-    } catch (error) {
-      toast.error('Erro ao alterar status da moto.');
-    }
-  };
-
-  const handleDocumentUpdated = (newUrl) => {
-    setMotorcycles(prev => prev.map(m => 
-      m.motorcycleId === docModalMoto.motorcycleId ? { ...m, documentUrl: newUrl } : m
-    ));
   };
 
   const stats = useMemo(() => ({
@@ -109,14 +72,6 @@ export function MotorcycleList() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <MotorcycleDocumentModal 
-        isOpen={!!docModalMoto}
-        onClose={() => setDocModalMoto(null)}
-        motorcycleId={docModalMoto?.motorcycleId}
-        documentUrl={docModalMoto?.documentUrl}
-        onUpdateSuccess={handleDocumentUpdated}
-      />
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-white mb-1 flex items-center gap-3">
@@ -132,11 +87,11 @@ export function MotorcycleList() {
 
       {!loading && (
         <div className="flex flex-wrap gap-3">
-          <StatPill label="Total Frota" value={stats.total} />
-          <StatPill label="Disponíveis" value={stats.available} color="text-blue-400" />
-          <StatPill label="Alugadas" value={stats.rented} color="text-orange-400" />
-          <StatPill label="Ativas" value={stats.active} color="text-green-500" />
-          <StatPill label="Inativas" value={stats.inactive} color="text-brand-red" />
+          <StatPill icon={Bike} label="Total Frota" value={stats.total} />
+          <StatPill icon={CheckCircle2} label="Disponíveis" value={stats.available} color="text-blue-400" />
+          <StatPill icon={AlertCircle} label="Alugadas" value={stats.rented} color="text-orange-400" />
+          <StatPill icon={CheckCircle2} label="Ativas" value={stats.active} color="text-green-500" />
+          <StatPill icon={AlertCircle} label="Inativas" value={stats.inactive} color="text-brand-red" />
         </div>
       )}
 
@@ -197,8 +152,18 @@ export function MotorcycleList() {
               initial={{ opacity: 0, y: 16 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ delay: index * 0.04 }}
-              className={`bg-black-rich border hover:border-brand-gold/50 rounded-2xl overflow-hidden transition-all group relative flex flex-col ${moto.active ? 'border-gray-mid' : 'border-brand-red/30 opacity-75 grayscale-[0.3]'}`}
+              onClick={() => navigate(`/admin/motos/${moto.motorcycleId}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(`/admin/motos/${moto.motorcycleId}`);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className={`bg-black-rich border hover:border-brand-gold/60 rounded-2xl overflow-hidden transition-all group relative flex flex-col cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold/50 ${moto.active ? 'border-gray-mid' : 'border-brand-red/30 opacity-75 grayscale-[0.3]'}`}
             >
+              <Bike className="absolute -bottom-5 -right-5 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
               <div className="p-5 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/5 to-transparent flex items-start justify-between">
                 <div className="flex gap-4 items-center min-w-0">
                   <div className="w-14 h-14 rounded-xl bg-gray-darker border border-gray-mid flex items-center justify-center overflow-hidden shrink-0">
@@ -251,26 +216,11 @@ export function MotorcycleList() {
                 </div>
               </div>
 
-              <div className="px-5 py-4 border-t border-gray-mid/50 flex gap-2 bg-gray-darker/20 mt-auto">
-                <button 
-                  onClick={() => toggleMotorcycleStatus(moto)} 
-                  className={`p-2.5 rounded-lg transition-colors ${moto.active ? 'bg-gray-dark hover:bg-brand-red/20 text-brand-red' : 'bg-green-500/10 hover:bg-green-500/20 text-green-500'}`} 
-                  title={moto.active ? "Desativar Moto" : "Ativar Moto"}
-                >
-                  {moto.active ? <PowerOff size={18} /> : <Power size={18} />}
-                </button>
-                <Link 
-                  to={`/admin/motos/${moto.motorcycleId}/editar`} 
-                  className="flex-1 flex items-center justify-center gap-2 bg-gray-dark hover:bg-gray-mid text-white py-2.5 rounded-lg text-sm font-medium transition-colors"
-                >
-                  <Edit size={16} /> Editar
-                </Link>
-                <button 
-                  onClick={() => setDocModalMoto(moto)} 
-                  className="flex-1 flex items-center justify-center gap-2 bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold py-2.5 rounded-lg text-sm font-bold transition-colors border border-brand-gold/20"
-                >
-                  <FileText size={16} /> CRLV
-                </button>
+              <div className="px-5 py-4 border-t border-gray-mid/50 mt-auto bg-gray-darker/20 flex items-center justify-between text-xs">
+                <span className="text-gray-500">Toque para abrir detalhes</span>
+                <span className="inline-flex items-center gap-1.5 text-brand-gold font-bold">
+                  <Eye size={14} /> Ver moto
+                </span>
               </div>
             </motion.div>
           ))}

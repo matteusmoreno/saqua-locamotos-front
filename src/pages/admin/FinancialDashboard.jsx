@@ -323,7 +323,8 @@ export function FinancialDashboard() {
             {activeTab === 'overview' && (
               <div className="p-6 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2 bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                  <div className="lg:col-span-2 relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <BarChart3 className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <h3 className="text-white font-bold mb-1 flex items-center gap-2">
                       <BarChart3 size={18} className="text-brand-gold" /> Fluxo de Caixa — Últimos 6 meses
                     </h3>
@@ -331,20 +332,23 @@ export function FinancialDashboard() {
                     <CashFlowChart data={analytics.cashFlow} />
                   </div>
 
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <Wallet className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <h3 className="text-white font-bold mb-4">Saúde Financeira</h3>
                     <HealthScoreRing score={analytics.healthScore} metrics={metrics} />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <Clock className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <h3 className="text-white font-bold mb-1">Envelhecimento de Recebíveis</h3>
                     <p className="text-gray-500 text-xs mb-4">Distribuição dos valores pendentes por faixa de atraso</p>
                     <AgingBucketsPanel buckets={analytics.aging} />
                   </div>
 
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <AlertTriangle className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-red/10 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <h3 className="text-white font-bold mb-4 flex items-center gap-2">
                       <AlertTriangle size={16} className="text-brand-red" /> Alertas
                     </h3>
@@ -352,10 +356,12 @@ export function FinancialDashboard() {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                      <Receipt className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                       <BreakdownPanel title="Por método de pagamento" items={analytics.methodBreakdown} labelMap={PAYMENT_METHOD_LABELS} />
                     </div>
-                    <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                    <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                      <TrendingUp className="absolute -bottom-6 -right-6 w-28 h-28 text-green-500/10 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                       <BreakdownPanel title="Por tipo de recebimento" items={analytics.paymentTypeBreakdown} labelMap={PAYMENT_TYPE_LABELS} />
                     </div>
                   </div>
@@ -442,19 +448,22 @@ export function FinancialDashboard() {
             {activeTab === 'fleet' && (
               <div className="p-6 space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                    <Bike className="absolute -bottom-5 -right-5 w-20 h-20 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <p className="text-xs text-gray-400 uppercase mb-1">Melhor Performance</p>
                     <p className="text-white font-bold">{analytics.motorcyclePerformance[0]?.label || '—'}</p>
                     <p className="text-brand-gold text-sm font-black">{formatCurrency(analytics.motorcyclePerformance[0]?.total || 0)}</p>
                   </div>
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                    <TrendingUp className="absolute -bottom-5 -right-5 w-20 h-20 text-green-500/10 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <p className="text-xs text-gray-400 uppercase mb-1">Motos Rentáveis</p>
                     <p className="text-2xl font-black text-green-500">
                       {analytics.motorcyclePerformance.filter(m => m.total > 0).length}
                     </p>
                     <p className="text-gray-500 text-xs">de {motorcycles.length} motos</p>
                   </div>
-                  <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                  <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-xl p-4 text-center">
+                    <TrendingDown className="absolute -bottom-5 -right-5 w-20 h-20 text-brand-red/10 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <p className="text-xs text-gray-400 uppercase mb-1">Com Saldo Negativo</p>
                     <p className="text-2xl font-black text-brand-red">
                       {analytics.motorcyclePerformance.filter(m => m.total < 0).length}
@@ -472,12 +481,14 @@ export function FinancialDashboard() {
                       <p className="text-gray-500 text-xs mt-1">Receitas, despesas e margem individual de cada veículo</p>
                     </div>
                   </div>
-                  <div className="bg-gray-darker/20 border border-gray-mid/50 rounded-2xl overflow-hidden">
+                  <div className="relative overflow-hidden group bg-gray-darker/20 border border-gray-mid/50 rounded-2xl">
+                    <Receipt className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                     <MotorcyclePerformanceTable data={analytics.motorcyclePerformance} />
                   </div>
                 </div>
 
-                <div className="bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
+                  <TrendingDown className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-red/10 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                   <BreakdownPanel
                     title="Despesas por categoria"
                     items={analytics.expenseTypeBreakdown}
