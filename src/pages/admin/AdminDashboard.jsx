@@ -241,7 +241,7 @@ export function AdminDashboard() {
           <div>
             <p className="text-brand-gold font-bold text-sm tracking-widest uppercase mb-2 capitalize-first">{today}</p>
             <h1 className="text-3xl sm:text-4xl font-black text-white mb-2">
-              Bem-vindo de volta, {user?.name ? user.name.split(' ')[0] : 'Admin'}! 👋
+              Bem-vindo de volta, {user?.name ? user.name.split(' ')[0] : 'Admin'}!
             </h1>
             <p className="text-gray-400 text-sm sm:text-base max-w-xl">
               Aqui está o resumo da sua operação hoje. Acompanhe a saúde financeira, o status da frota e os contratos ativos em tempo real.
