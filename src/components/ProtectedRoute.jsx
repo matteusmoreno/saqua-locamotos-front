@@ -5,7 +5,6 @@ export function ProtectedRoute({ children, allowedRoles }) {
   const { signed, user, loading } = useAuth();
   const location = useLocation();
 
-  // Enquanto estiver verificando o token, mostra um loading giratório
   if (loading) {
     return (
       <div className="min-h-screen bg-black-pure flex items-center justify-center">
@@ -14,16 +13,18 @@ export function ProtectedRoute({ children, allowedRoles }) {
     );
   }
 
-  // Se não estiver logado (signed = false), joga de volta pra tela de login
   if (!signed) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Se a rota exige um perfil específico (ex: ADMIN) e o usuário não for, joga pra Home
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/" replace />;
+    // CUSTOMER tentando acessar rota de ADMIN → redireciona para área do cliente
+    if (user?.role === 'CUSTOMER') {
+      return <Navigate to="/customer/dashboard" replace />;
+    }
+    // ADMIN tentando rota exclusiva de CUSTOMER (improvável, mas seguro)
+    return <Navigate to="/admin/dashboard" replace />;
   }
 
-  // Se passou em tudo, renderiza a tela que o usuário pediu
   return children;
 }

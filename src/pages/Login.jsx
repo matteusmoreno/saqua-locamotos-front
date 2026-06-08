@@ -102,8 +102,10 @@ export function Login() {
       // Redireciona baseado no perfil (Ajuste 'ADMIN' para a role exata que seu Quarkus retorna)
       if (userLogged?.role === 'ADMIN') {
         navigate('/admin/dashboard', { replace: true });
+      } else if (userLogged?.role === 'CUSTOMER') {
+        navigate('/customer/dashboard', { replace: true });
       } else {
-        navigate('/app/locatario', { replace: true }); // Rota futura para clientes comuns
+        navigate('/', { replace: true });
       }
     } catch (error) {
       console.error(error);

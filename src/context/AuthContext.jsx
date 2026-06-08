@@ -1,7 +1,16 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { AuthService } from '../services/authService';
 
-const AuthContext = createContext({});
+const AuthContext = createContext({
+  signed: false,
+  user: null,
+  loading: true,
+  isAdmin: false,
+  isCustomer: false,
+  login: async () => {},
+  logout: () => {},
+  updateUser: () => {},
+});
 
 const decodeJWT = (token) => {
   try {
@@ -107,8 +116,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const isAdmin = user?.role === 'ADMIN';
+  const isCustomer = user?.role === 'CUSTOMER';
+
   return (
-    <AuthContext.Provider value={{ signed: !!user, user, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ signed: !!user, user, loading, login, logout, updateUser, isAdmin, isCustomer }}>
       {children}
     </AuthContext.Provider>
   );

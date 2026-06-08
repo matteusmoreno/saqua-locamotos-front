@@ -11,8 +11,9 @@ import { Footer } from './components/layout/Footer';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { AdminLayout } from './components/admin/AdminLayout';
+import { CustomerLayout } from './components/customer/CustomerLayout';
 
-// Páginas de Clientes
+// Páginas de Clientes (admin)
 import { CustomerList } from './pages/admin/CustomerList';
 import { CustomerRegistration } from './pages/admin/CustomerRegistration';
 import { CustomerEdit } from './pages/admin/CustomerEdit';
@@ -35,9 +36,19 @@ import { FinancialDashboard } from './pages/admin/FinancialDashboard';
 
 import { AdminProfile } from './pages/admin/AdminProfile';
 
+// Páginas do cliente (locatário)
+import { CustomerDashboard } from './pages/customer/CustomerDashboard';
+import { CustomerContracts } from './pages/customer/CustomerContracts';
+import { CustomerContractDetail } from './pages/customer/CustomerContractDetail';
+import { CustomerMotorcycle } from './pages/customer/CustomerMotorcycle';
+import { CustomerProfile } from './pages/customer/CustomerProfile';
+
 function SiteLayout({ children }) {
   const location = useLocation();
-  const isSitePage = !location.pathname.startsWith('/admin') && location.pathname !== '/login';
+  const isSitePage =
+    !location.pathname.startsWith('/admin') &&
+    !location.pathname.startsWith('/customer') &&
+    location.pathname !== '/login';
 
   return (
     <>
@@ -100,6 +111,25 @@ function App() {
                       </AdminLayout>
                     </ProtectedRoute>
                   } 
+                />
+
+                {/* Rotas do cliente (locatário) */}
+                <Route
+                  path="/customer/*"
+                  element={
+                    <ProtectedRoute allowedRoles={['CUSTOMER']}>
+                      <CustomerLayout>
+                        <Routes>
+                          <Route path="dashboard" element={<CustomerDashboard />} />
+                          <Route path="contratos" element={<CustomerContracts />} />
+                          <Route path="contratos/:id" element={<CustomerContractDetail />} />
+                          <Route path="moto" element={<CustomerMotorcycle />} />
+                          <Route path="perfil" element={<CustomerProfile />} />
+                          <Route path="*" element={<Navigate to="/customer/dashboard" replace />} />
+                        </Routes>
+                      </CustomerLayout>
+                    </ProtectedRoute>
+                  }
                 />
               </Routes>
             </SiteLayout>
