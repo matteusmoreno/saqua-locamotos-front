@@ -13,6 +13,8 @@ export const UserService = {
   updatePassword: (data) => api.patch('/users/update-password', data),
   sendVerificationEmail: (id) => api.post(`/users/${id}/send-verification-email`),
   verifyEmailToken: (token) => api.get('/users/verify-email', { params: { token } }),
+  sendResetPasswordEmail: (email) => api.post('/users/send-reset-password-email', null, { params: { email } }),
+  resetPassword: (data) => api.post('/users/reset-password', data),
   
   // Uploads
   uploadPicture: (id, formData) => api.post(`/users/${id}/upload-picture`, formData, {

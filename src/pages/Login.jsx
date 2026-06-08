@@ -1,14 +1,16 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowLeft, UserCheck, Zap } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Mail, Lock, ArrowLeft, UserCheck, Zap, KeyRound, ShieldCheck, X, Loader2, Send } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import Logo from '../assets/saqua-locamotos-logo.png';
 
 // Importando o contexto de autenticação que criamos
 import { useAuth } from '../context/AuthContext';
+import { UserService } from '../services/userService';
 
 // Schema de validação com Yup
 const schema = yup.object().shape({
@@ -19,10 +21,75 @@ const schema = yup.object().shape({
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState('request');
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [isRequestingCode, setIsRequestingCode] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: yupResolver(schema)
   });
+
+  const {
+    register: regRequest,
+    handleSubmit: submitRequest,
+    reset: resetRequestForm,
+    formState: { errors: requestErrors },
+  } = useForm({
+    defaultValues: { email: '' },
+  });
+
+  const {
+    register: regReset,
+    handleSubmit: submitReset,
+    reset: resetResetForm,
+    watch: watchReset,
+    formState: { errors: resetErrors },
+  } = useForm({
+    defaultValues: { token: '', newPassword: '', confirmPassword: '' },
+  });
+
+  const openRecoveryModal = () => {
+    setRecoveryStep('request');
+    setRecoveryEmail('');
+    resetRequestForm({ email: '' });
+    resetResetForm({ token: '', newPassword: '', confirmPassword: '' });
+    setIsRecoveryOpen(true);
+  };
+
+  const closeRecoveryModal = () => {
+    setIsRecoveryOpen(false);
+  };
+
+  const handleRequestResetCode = async ({ email }) => {
+    setIsRequestingCode(true);
+    try {
+      await UserService.sendResetPasswordEmail(email);
+      setRecoveryEmail(email);
+      setRecoveryStep('reset');
+      toast.success('Código de recuperação enviado para o e-mail informado.');
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Não foi possível enviar o código agora.');
+    } finally {
+      setIsRequestingCode(false);
+    }
+  };
+
+  const handleResetPassword = async ({ token, newPassword }) => {
+    setIsResettingPassword(true);
+    try {
+      await UserService.resetPassword({ token, newPassword });
+      toast.success('Senha redefinida com sucesso. Faça login com a nova senha.');
+      closeRecoveryModal();
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Token inválido ou expirado.');
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -85,7 +152,7 @@ export function Login() {
             
             {/* Input E-mail */}
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2.5">E-mail corporativo ou Pessoal</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2.5">E-mail</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-colors group-focus-within:text-brand-gold text-gray-500">
                   <Mail size={20} />
@@ -103,10 +170,14 @@ export function Login() {
             {/* Input Senha */}
             <div>
               <div className="flex justify-between items-center mb-2.5">
-                <label className="block text-sm font-semibold text-gray-300">Sua senha secreta</label>
-                <a href="#" className="text-sm font-medium text-brand-gold hover:text-white transition-colors">
-                  Esqueceu a senha?
-                </a>
+                <label className="block text-sm font-semibold text-gray-300">Senha</label>
+                <button
+                  type="button"
+                  onClick={openRecoveryModal}
+                  className="text-sm font-medium text-brand-gold hover:text-white transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
               </div>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none transition-colors group-focus-within:text-brand-gold text-gray-500">
@@ -174,6 +245,170 @@ export function Login() {
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {isRecoveryOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeRecoveryModal}
+              className="absolute inset-0 bg-black-pure/80 backdrop-blur-sm"
+            />
+
+            <motion.div
+              initial={{ opacity: 0, y: 14, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 14, scale: 0.98 }}
+              className="relative w-full max-w-lg rounded-3xl border border-gray-mid bg-black-rich shadow-2xl"
+            >
+              <div className="flex items-start justify-between gap-4 border-b border-gray-mid/60 p-6">
+                <div>
+                  <h3 className="text-xl font-black text-white">Recuperar Senha</h3>
+                  <p className="mt-1 text-sm text-gray-400">
+                    {recoveryStep === 'request'
+                      ? 'Informe seu e-mail para receber o código de recuperação.'
+                      : `Cole o token enviado para ${recoveryEmail} e defina uma nova senha.`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeRecoveryModal}
+                  className="rounded-lg border border-gray-mid p-2 text-gray-500 hover:text-white hover:bg-gray-darker transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-gray-mid bg-gray-darker/40 p-2">
+                  <div className={`rounded-lg px-3 py-2 text-center text-xs font-bold uppercase tracking-wider ${recoveryStep === 'request' ? 'bg-brand-gold text-black-pure' : 'text-gray-400'}`}>
+                    1. Solicitar código
+                  </div>
+                  <div className={`rounded-lg px-3 py-2 text-center text-xs font-bold uppercase tracking-wider ${recoveryStep === 'reset' ? 'bg-brand-gold text-black-pure' : 'text-gray-400'}`}>
+                    2. Redefinir senha
+                  </div>
+                </div>
+
+                {recoveryStep === 'request' && (
+                  <form onSubmit={submitRequest(handleRequestResetCode)} className="space-y-4">
+                    <div>
+                      <label className="mb-2.5 block text-sm font-semibold text-gray-300">E-mail da conta</label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-gray-500">
+                          <Mail size={20} />
+                        </div>
+                        <input
+                          type="email"
+                          {...regRequest('email', {
+                            required: 'O e-mail é obrigatório.',
+                            pattern: {
+                              value: /^\S+@\S+\.\S+$/,
+                              message: 'Informe um e-mail válido.',
+                            },
+                          })}
+                          className={`block w-full rounded-2xl border bg-gray-darker py-4 pl-12 pr-5 text-white placeholder:text-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black-pure ${requestErrors.email ? 'border-brand-red focus:ring-brand-red' : 'border-gray-mid focus:border-brand-gold focus:ring-brand-gold'}`}
+                          placeholder="seuemail@dominio.com"
+                        />
+                      </div>
+                      {requestErrors.email && <p className="mt-2 text-sm text-brand-red">{requestErrors.email.message}</p>}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isRequestingCode}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-gold px-6 py-4 font-black text-black-pure transition-all hover:bg-brand-gold-hover disabled:opacity-60"
+                    >
+                      {isRequestingCode ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                      Enviar código
+                    </button>
+                  </form>
+                )}
+
+                {recoveryStep === 'reset' && (
+                  <form onSubmit={submitReset(handleResetPassword)} className="space-y-4">
+                    <div>
+                      <label className="mb-2.5 block text-sm font-semibold text-gray-300">Token de recuperação</label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-gray-500">
+                          <ShieldCheck size={20} />
+                        </div>
+                        <input
+                          type="text"
+                          {...regReset('token', { required: 'O token é obrigatório.' })}
+                          className={`block w-full rounded-2xl border bg-gray-darker py-4 pl-12 pr-5 text-white placeholder:text-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black-pure ${resetErrors.token ? 'border-brand-red focus:ring-brand-red' : 'border-gray-mid focus:border-brand-gold focus:ring-brand-gold'}`}
+                          placeholder="Cole aqui o token"
+                        />
+                      </div>
+                      {resetErrors.token && <p className="mt-2 text-sm text-brand-red">{resetErrors.token.message}</p>}
+                    </div>
+
+                    <div>
+                      <label className="mb-2.5 block text-sm font-semibold text-gray-300">Nova senha</label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-gray-500">
+                          <KeyRound size={20} />
+                        </div>
+                        <input
+                          type="password"
+                          {...regReset('newPassword', {
+                            required: 'A nova senha é obrigatória.',
+                            minLength: { value: 6, message: 'A senha deve ter no mínimo 6 caracteres.' },
+                          })}
+                          className={`block w-full rounded-2xl border bg-gray-darker py-4 pl-12 pr-5 text-white placeholder:text-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black-pure ${resetErrors.newPassword ? 'border-brand-red focus:ring-brand-red' : 'border-gray-mid focus:border-brand-gold focus:ring-brand-gold'}`}
+                          placeholder="Digite a nova senha"
+                        />
+                      </div>
+                      {resetErrors.newPassword && <p className="mt-2 text-sm text-brand-red">{resetErrors.newPassword.message}</p>}
+                    </div>
+
+                    <div>
+                      <label className="mb-2.5 block text-sm font-semibold text-gray-300">Confirmar nova senha</label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-5 text-gray-500">
+                          <Lock size={20} />
+                        </div>
+                        <input
+                          type="password"
+                          {...regReset('confirmPassword', {
+                            required: 'Confirme a nova senha.',
+                            validate: (value) => {
+                              if (watchReset('newPassword') !== value) return 'As senhas não coincidem.';
+                              return true;
+                            },
+                          })}
+                          className={`block w-full rounded-2xl border bg-gray-darker py-4 pl-12 pr-5 text-white placeholder:text-gray-600 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black-pure ${resetErrors.confirmPassword ? 'border-brand-red focus:ring-brand-red' : 'border-gray-mid focus:border-brand-gold focus:ring-brand-gold'}`}
+                          placeholder="Repita a nova senha"
+                        />
+                      </div>
+                      {resetErrors.confirmPassword && <p className="mt-2 text-sm text-brand-red">{resetErrors.confirmPassword.message}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => setRecoveryStep('request')}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-mid bg-gray-darker px-6 py-4 font-bold text-gray-200 transition-colors hover:bg-gray-dark"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isResettingPassword}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-green-500/30 bg-green-500/10 px-6 py-4 font-black text-green-400 transition-colors hover:bg-green-500/20 disabled:opacity-60"
+                      >
+                        {isResettingPassword ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
+                        Redefinir senha
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
