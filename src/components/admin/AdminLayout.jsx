@@ -26,11 +26,11 @@ export function AdminLayout({ children }) {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
+    { name: 'Meu Perfil', path: '/admin/perfil', icon: <ShieldCheck size={20} /> },
     { name: 'Clientes', path: '/admin/clientes', icon: <Users size={20} /> },
     { name: 'Frota de Motos', path: '/admin/motos', icon: <Bike size={20} /> },
     { name: 'Contratos', path: '/admin/contratos', icon: <FileText size={20} /> },
     { name: 'Financeiro', path: '/admin/financeiro', icon: <Wallet size={20} /> },
-    { name: 'Meu Perfil', path: '/admin/perfil', icon: <ShieldCheck size={20} /> },
   ];
 
   return (
