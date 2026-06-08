@@ -18,6 +18,7 @@ export const PAYMENT_METHOD_LABELS = {
 };
 
 export const EXPENSE_TYPE_LABELS = {
+  ACQUISITION: 'Aquisição da Moto',
   MAINTENANCE: 'Manutenção',
   UTILITIES: 'Utilidades',
   TAXES: 'Impostos',

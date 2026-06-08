@@ -14,6 +14,7 @@ import {
 } from './financial/FinancialFormField';
 
 const EXPENSE_TYPE_OPTIONS = [
+  { value: 'ACQUISITION', label: 'Aquisição da Moto', hint: 'Compra/aquisição do veículo', icon: Bike },
   { value: 'MAINTENANCE', label: 'Manutenção', hint: 'Revisões e reparos', icon: Wrench },
   { value: 'UTILITIES', label: 'Utilidades', hint: 'Combustível, lavagem', icon: Zap },
   { value: 'TAXES', label: 'Impostos', hint: 'IPVA, licenciamento', icon: FileText },
