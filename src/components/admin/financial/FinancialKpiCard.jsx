@@ -44,7 +44,7 @@ export function FinancialKpiCard({ icon, label, value, sub, hint, trend, color =
         )}
       </div>
       <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-black ${palette.accent === 'text-brand-gold' && !highlight ? 'text-white' : palette.accent}`}>
+      <p className={`text-[clamp(0.95rem,2.2vw,1.5rem)] leading-tight whitespace-nowrap font-black tracking-tight [font-variant-numeric:tabular-nums] ${palette.accent === 'text-brand-gold' && !highlight ? 'text-white' : palette.accent}`}>
         {value}
       </p>
       {sub && <p className="text-xs text-gray-500 mt-1.5">{sub}</p>}

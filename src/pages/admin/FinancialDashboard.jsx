@@ -23,6 +23,8 @@ import { BreakdownPanel } from '../../components/admin/financial/BreakdownPanel'
 import { HealthScoreRing } from '../../components/admin/financial/HealthScoreRing';
 import { FinancialTransactionsTable } from '../../components/admin/financial/FinancialTransactionsTable';
 import { MotorcyclePerformanceTable } from '../../components/admin/financial/MotorcyclePerformanceTable';
+import { FinancialCompositionDonut } from '../../components/admin/financial/FinancialCompositionDonut';
+import { RevenueExpenseLineChart } from '../../components/admin/financial/RevenueExpenseLineChart';
 import {
   PAYMENT_TYPE_LABELS, EXPENSE_TYPE_LABELS, PAYMENT_METHOD_LABELS
 } from '../../utils/financialLabels';
@@ -48,6 +50,20 @@ const PERIODS = [
   { key: '90d', label: '90 dias' },
 ];
 
+const CHART_TYPE_OPTIONS = [
+  { key: 'bars', label: 'Barras' },
+  { key: 'lines', label: 'Linhas' },
+  { key: 'composition', label: 'Pizza' },
+];
+
+const CHART_WINDOW_OPTIONS = [
+  { key: 3, label: '3M' },
+  { key: 6, label: '6M' },
+  { key: 12, label: '12M' },
+];
+
+const CHART_WINDOW_BOUNDS = { min: 1, max: 60 };
+
 function sortItems(items, field, dir) {
   return [...items].sort((a, b) => {
     const aVal = a[field] ?? '';
@@ -68,6 +84,10 @@ export function FinancialDashboard() {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [period, setPeriod] = useState('all');
+  const [chartType, setChartType] = useState('bars');
+  const [chartWindowMonths, setChartWindowMonths] = useState(3);
+  const [isCustomChartWindow, setIsCustomChartWindow] = useState(false);
+  const [customChartWindowMonths, setCustomChartWindowMonths] = useState(3);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sortField, setSortField] = useState('dueDate');
@@ -115,6 +135,28 @@ export function FinancialDashboard() {
     [expenses, period]
   );
 
+  const chartPayments = useMemo(
+    () => (period === 'all' ? payments : periodPayments),
+    [payments, periodPayments, period]
+  );
+
+  const chartExpenses = useMemo(
+    () => (period === 'all' ? expenses : periodExpenses),
+    [expenses, periodExpenses, period]
+  );
+
+  const effectiveChartWindowMonths = useMemo(() => {
+    if (!isCustomChartWindow) return chartWindowMonths;
+    const parsed = Number(customChartWindowMonths);
+    if (!Number.isFinite(parsed)) return chartWindowMonths;
+    return Math.max(CHART_WINDOW_BOUNDS.min, Math.min(CHART_WINDOW_BOUNDS.max, Math.round(parsed)));
+  }, [isCustomChartWindow, chartWindowMonths, customChartWindowMonths]);
+
+  const chartCashFlow = useMemo(
+    () => getCashFlowByMonth(chartPayments, chartExpenses, effectiveChartWindowMonths),
+    [chartPayments, chartExpenses, effectiveChartWindowMonths]
+  );
+
   const globalMetrics = useMemo(
     () => computeFinancialMetrics(payments, expenses),
     [payments, expenses]
@@ -126,7 +168,6 @@ export function FinancialDashboard() {
   }, [period, globalMetrics, periodPayments, periodExpenses]);
 
   const analytics = useMemo(() => ({
-    cashFlow: getCashFlowByMonth(payments, expenses),
     aging: getAgingBuckets(payments),
     methodBreakdown: getPaymentMethodBreakdown(period === 'all' ? payments : periodPayments),
     paymentTypeBreakdown: getPaymentTypeBreakdown(period === 'all' ? payments : periodPayments),
@@ -325,11 +366,76 @@ export function FinancialDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
                     <BarChart3 className="absolute -bottom-6 -right-6 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
-                    <h3 className="text-white font-bold mb-1 flex items-center gap-2">
-                      <BarChart3 size={18} className="text-brand-gold" /> Fluxo de Caixa — Últimos 6 meses
-                    </h3>
-                    <p className="text-gray-500 text-xs mb-5">Receitas confirmadas vs despesas pagas por mês</p>
-                    <CashFlowChart data={analytics.cashFlow} />
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5 relative z-10">
+                      <div>
+                        <h3 className="text-white font-bold mb-1 flex items-center gap-2">
+                          <BarChart3 size={18} className="text-brand-gold" /> Evolução Financeira
+                        </h3>
+                        <p className="text-gray-500 text-xs">Selecione o tipo de gráfico e janela de tempo para analisar a evolução</p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div className="flex bg-gray-darker border border-gray-mid rounded-lg p-1">
+                          {CHART_TYPE_OPTIONS.map(option => (
+                            <button
+                              key={option.key}
+                              onClick={() => setChartType(option.key)}
+                              className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                                chartType === option.key ? 'bg-brand-gold text-black-pure' : 'text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex bg-gray-darker border border-gray-mid rounded-lg p-1">
+                          {CHART_WINDOW_OPTIONS.map(option => (
+                            <button
+                              key={option.key}
+                              onClick={() => {
+                                setIsCustomChartWindow(false);
+                                setChartWindowMonths(option.key);
+                              }}
+                              className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                                !isCustomChartWindow && chartWindowMonths === option.key ? 'bg-brand-gold text-black-pure' : 'text-gray-400 hover:text-white'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => setIsCustomChartWindow(true)}
+                            className={`px-3 py-1.5 text-[11px] font-bold rounded-md transition-colors cursor-pointer ${
+                              isCustomChartWindow ? 'bg-brand-gold text-black-pure' : 'text-gray-400 hover:text-white'
+                            }`}
+                          >
+                            Custom
+                          </button>
+                        </div>
+                        {isCustomChartWindow && (
+                          <div className="flex items-center gap-2 bg-gray-darker border border-gray-mid rounded-lg px-2 py-1.5">
+                            <input
+                              type="number"
+                              min={CHART_WINDOW_BOUNDS.min}
+                              max={CHART_WINDOW_BOUNDS.max}
+                              value={customChartWindowMonths}
+                              onChange={(e) => setCustomChartWindowMonths(e.target.value)}
+                              className="w-16 bg-transparent text-white text-xs font-bold outline-none"
+                            />
+                            <span className="text-[10px] uppercase tracking-wider text-gray-500">meses</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {chartType === 'bars' && <CashFlowChart data={chartCashFlow} />}
+                    {chartType === 'lines' && <RevenueExpenseLineChart data={chartCashFlow} />}
+                    {chartType === 'composition' && (
+                      <FinancialCompositionDonut
+                        received={metrics.totalReceived}
+                        paidExpenses={metrics.totalExpensesPaid}
+                        pending={metrics.totalPending}
+                      />
+                    )}
                   </div>
 
                   <div className="relative overflow-hidden group bg-gray-darker/30 border border-gray-mid/50 rounded-2xl p-6">
