@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FileText, ArrowLeft, Loader2, Plus, CheckCircle, Trash2,
-  Download, Flag, User, Bike, Wallet, Calendar, Mail, Phone, XCircle
+  Download, Flag, User, Bike, Wallet, Calendar, Mail, Phone, XCircle, Upload, ExternalLink
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,7 +22,10 @@ import { formatCurrency, formatDate, isOverdue } from '../../utils/formatCurrenc
 
 function DetailKpi({ icon, label, value, color = 'text-white' }) {
   return (
-    <div className="bg-gray-darker/50 border border-gray-mid/50 rounded-xl p-4">
+    <div className="relative overflow-hidden bg-gray-darker/50 border border-gray-mid/50 rounded-xl p-4 group">
+      <div className="absolute -bottom-3 -right-3 opacity-5 text-brand-gold group-hover:scale-110 transition-transform duration-500">
+        {icon}
+      </div>
       <div className="flex items-center gap-2 text-gray-500 mb-2">
         {icon}
         <span className="text-[10px] uppercase font-bold tracking-wider">{label}</span>
@@ -39,6 +42,8 @@ export function ContractDetail() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showCreatePayment, setShowCreatePayment] = useState(false);
   const [registerPayment, setRegisterPayment] = useState(null);
+  const [isUploadingContract, setIsUploadingContract] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { confirm } = useConfirm();
 
@@ -117,6 +122,31 @@ export function ContractDetail() {
     } catch { toast.error('Erro ao gerar PDF.'); }
   };
 
+  const handleSelectContractFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleUploadContractFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploadingContract(true);
+    try {
+      const response = await ContractService.uploadFile(id, formData);
+      setContract(response.data);
+      toast.success('Contrato assinado enviado com sucesso!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao enviar contrato assinado.');
+    } finally {
+      setIsUploadingContract(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-brand-gold" size={48} /></div>;
   }
@@ -134,7 +164,6 @@ export function ContractDetail() {
   const TABS = [
     { key: 'overview', label: 'Resumo' },
     { key: 'payments', label: `Pagamentos (${payments.length})` },
-    { key: 'actions', label: 'Ações' },
   ];
 
   return (
@@ -145,7 +174,7 @@ export function ContractDetail() {
       {/* Hero */}
       <div className="bg-black-rich border border-gray-mid rounded-2xl overflow-hidden">
         <div className="p-6 bg-gradient-to-br from-brand-gold/10 via-transparent to-transparent border-b border-gray-mid/50">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 justify-between">
             <Link to="/admin/contratos" className="p-2 bg-gray-darker text-gray-400 rounded-xl border border-gray-mid hover:text-white transition-colors cursor-pointer shrink-0">
               <ArrowLeft size={22} />
             </Link>
@@ -161,6 +190,66 @@ export function ContractDetail() {
                 {RENTAL_TYPE_LABELS[contract.rentalType]} · {formatDate(contract.startDate)} → {formatDate(contract.endDate)}
               </p>
             </div>
+            {contract.status === 'ACTIVE' && (
+              <button onClick={() => setShowCreatePayment(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 text-brand-gold hover:bg-brand-gold/20 transition-colors cursor-pointer text-sm font-bold shrink-0">
+                <Plus size={16} /> Novo Pagamento
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 pt-6">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.doc,.docx,image/*"
+            onChange={handleUploadContractFile}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-gray-darker/60 border border-gray-mid/60 rounded-xl p-4">
+              <p className="text-[11px] uppercase tracking-wider text-gray-500 font-bold mb-3">Documentos do contrato</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={handleDownloadPdf} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black-rich border border-gray-mid text-white hover:bg-gray-mid transition-colors cursor-pointer text-sm font-bold">
+                  <Download size={16} /> Gerar Contrato
+                </button>
+
+                <button
+                  onClick={handleSelectContractFile}
+                  disabled={isUploadingContract}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-gold/10 border border-brand-gold/20 text-brand-gold hover:bg-brand-gold/20 transition-colors cursor-pointer text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isUploadingContract ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                  {contract.contractUrl ? 'Substituir Assinado' : 'Upload Assinado'}
+                </button>
+
+                {contract.contractUrl && (
+                  <a
+                    href={contract.contractUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 hover:bg-green-500/20 transition-colors cursor-pointer text-sm font-bold"
+                  >
+                    <ExternalLink size={16} /> Ver Assinado
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {contract.status === 'ACTIVE' && (
+              <div className="bg-gray-darker/60 border border-gray-mid/60 rounded-xl p-4">
+                <p className="text-[11px] uppercase tracking-wider text-gray-500 font-bold mb-3">Ciclo do contrato</p>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={handleFinishContract} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors cursor-pointer text-sm font-bold">
+                    <Flag size={16} /> Finalizar Contrato
+                  </button>
+                  <button onClick={handleCancelContract} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-red/10 border border-brand-red/20 text-brand-red hover:bg-brand-red/20 transition-colors cursor-pointer text-sm font-bold">
+                    <XCircle size={16} /> Cancelar Contrato
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -280,31 +369,6 @@ export function ContractDetail() {
             </motion.div>
           )}
 
-          {activeTab === 'actions' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-lg">
-              <p className="text-gray-400 text-sm mb-4">Ações disponíveis para este contrato.</p>
-              <button onClick={handleDownloadPdf} className="w-full flex items-center gap-3 p-4 rounded-xl bg-gray-darker border border-gray-mid hover:border-gray-mid/80 text-white transition-colors cursor-pointer">
-                <Download size={20} className="text-gray-400" />
-                <div className="text-left"><p className="font-bold">Baixar PDF</p><p className="text-xs text-gray-500">Gerar documento do contrato</p></div>
-              </button>
-              {contract.status === 'ACTIVE' && (
-                <>
-                  <button onClick={() => setShowCreatePayment(true)} className="w-full flex items-center gap-3 p-4 rounded-xl bg-brand-gold/10 border border-brand-gold/20 hover:bg-brand-gold/20 text-brand-gold transition-colors cursor-pointer">
-                    <Plus size={20} />
-                    <div className="text-left"><p className="font-bold">Novo Pagamento</p><p className="text-xs text-gray-500">Criar lançamento financeiro</p></div>
-                  </button>
-                  <button onClick={handleFinishContract} className="w-full flex items-center gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-blue-400 transition-colors cursor-pointer">
-                    <Flag size={20} />
-                    <div className="text-left"><p className="font-bold">Finalizar Contrato</p><p className="text-xs text-gray-500">Encerrar locação com opção de devolver caução</p></div>
-                  </button>
-                  <button onClick={handleCancelContract} className="w-full flex items-center gap-3 p-4 rounded-xl bg-brand-red/10 border border-brand-red/20 hover:bg-brand-red/20 text-brand-red transition-colors cursor-pointer">
-                    <XCircle size={20} />
-                    <div className="text-left"><p className="font-bold">Cancelar Contrato</p><p className="text-xs text-gray-500">Ação irreversível</p></div>
-                  </button>
-                </>
-              )}
-            </motion.div>
-          )}
         </div>
       </div>
     </div>

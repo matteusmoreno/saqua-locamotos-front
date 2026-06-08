@@ -1,14 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  FileText, Plus, Search, ShieldAlert, Loader2, Download,
-  XCircle, ArrowRight, User, Bike, Calendar, CheckCircle, AlertTriangle
+  FileText, Plus, Search, ShieldAlert, Loader2,
+  Eye, User, Bike, Calendar, CheckCircle, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { ContractService } from '../../services/contractService';
-import { useConfirm } from '../../context/ConfirmContext';
 import { ContractStatusBadge } from '../../components/admin/contracts/ContractStatusBadge';
 import { ContractProgressBar } from '../../components/admin/contracts/ContractProgressBar';
 import { RENTAL_TYPE_LABELS } from '../../utils/financialLabels';
@@ -29,8 +28,7 @@ export function ContractList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-
-  const { confirm } = useConfirm();
+  const navigate = useNavigate();
 
   useEffect(() => { fetchContracts(); }, []);
 
@@ -61,40 +59,6 @@ export function ContractList() {
     const matchesStatus = statusFilter === 'ALL' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
-  const handleCancelContract = async (contractId) => {
-    const ok = await confirm({
-      title: 'Cancelar Contrato',
-      message: 'Tem certeza? Esta ação não pode ser desfeita.',
-      confirmText: 'Sim, Cancelar',
-      isDanger: true,
-    });
-    if (!ok) return;
-    try {
-      await ContractService.cancelContract(contractId);
-      toast.success('Contrato cancelado!');
-      fetchContracts();
-    } catch {
-      toast.error('Erro ao cancelar o contrato.');
-    }
-  };
-
-  const handleDownloadPdf = async (contractId) => {
-    try {
-      const response = await ContractService.generatePdf(contractId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `contrato-${contractId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Download iniciado!');
-    } catch {
-      toast.error('Erro ao gerar PDF.');
-    }
-  };
 
   const STATUS_TABS = [
     { key: 'ALL', label: 'Todos' },
@@ -190,7 +154,16 @@ export function ContractList() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="relative bg-black-rich border border-gray-mid hover:border-brand-gold/30 rounded-2xl overflow-hidden transition-all group"
+                onClick={() => navigate(`/admin/contratos/${contract.contractId}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(`/admin/contratos/${contract.contractId}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className="relative bg-black-rich border border-gray-mid hover:border-brand-gold/30 rounded-2xl overflow-hidden transition-all group cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
               >
                 <FileText className="absolute -bottom-5 -right-5 w-28 h-28 text-brand-gold/5 group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
                 <div className="p-5 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/5 to-transparent">
@@ -242,28 +215,11 @@ export function ContractList() {
                   </div>
                 </div>
 
-                <div className="px-5 py-4 border-t border-gray-mid/50 flex gap-2 bg-gray-darker/20">
-                  {contract.status === 'ACTIVE' && (
-                    <button
-                      onClick={() => handleCancelContract(contract.contractId)}
-                      className="p-2.5 rounded-lg bg-brand-red/10 text-brand-red hover:bg-brand-red/20 transition-colors cursor-pointer"
-                      title="Cancelar"
-                    >
-                      <XCircle size={18} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDownloadPdf(contract.contractId)}
-                    className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-lg bg-gray-dark hover:bg-gray-mid text-white text-sm font-medium transition-colors cursor-pointer"
-                  >
-                    <Download size={16} /> PDF
-                  </button>
-                  <Link
-                    to={`/admin/contratos/${contract.contractId}`}
-                    className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-lg bg-brand-gold/10 hover:bg-brand-gold/20 text-brand-gold text-sm font-bold transition-colors border border-brand-gold/20 cursor-pointer"
-                  >
-                    Detalhes <ArrowRight size={16} />
-                  </Link>
+                <div className="px-5 py-4 border-t border-gray-mid/50 bg-gray-darker/20 flex items-center justify-between text-xs">
+                  <span className="text-gray-500">Toque para abrir detalhes</span>
+                  <span className="inline-flex items-center gap-1.5 text-brand-gold font-bold">
+                    <Eye size={14} /> Ver contrato
+                  </span>
                 </div>
               </motion.div>
             );
