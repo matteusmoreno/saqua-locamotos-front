@@ -6,6 +6,7 @@ import {
   Bike, 
   FileText, 
   Wallet, 
+  ShieldCheck,
   LogOut, 
   Menu
 } from 'lucide-react';
@@ -29,6 +30,7 @@ export function AdminLayout({ children }) {
     { name: 'Frota de Motos', path: '/admin/motos', icon: <Bike size={20} /> },
     { name: 'Contratos', path: '/admin/contratos', icon: <FileText size={20} /> },
     { name: 'Financeiro', path: '/admin/financeiro', icon: <Wallet size={20} /> },
+    { name: 'Meu Perfil', path: '/admin/perfil', icon: <ShieldCheck size={20} /> },
   ];
 
   return (

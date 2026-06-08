@@ -26,22 +26,41 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const persistUser = (nextUser) => {
+    localStorage.setItem('@SaquaLocamotos:user', JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem('@SaquaLocamotos:token');
+    const storedUserRaw = localStorage.getItem('@SaquaLocamotos:user');
     
     if (storedToken) {
       const decoded = decodeJWT(storedToken);
       if (decoded) {
         // Extraímos os dados diretamente do token
-        setUser({
+        const tokenUser = {
           id: decoded.userId,
           name: decoded.name,
           email: decoded.upn, // ou decoded.email se o seu JWT fornecer
           role: decoded.groups?.[0] || 'ADMIN'
-        });
+        };
+
+        try {
+          const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+          if (storedUser) {
+            setUser({ ...tokenUser, ...storedUser, id: tokenUser.id, role: tokenUser.role });
+          } else {
+            setUser(tokenUser);
+          }
+        } catch (error) {
+          console.error('Erro ao ler utilizador salvo:', error);
+          setUser(tokenUser);
+        }
       } else {
         // Token inválido ou expirado
         localStorage.removeItem('@SaquaLocamotos:token');
+        localStorage.removeItem('@SaquaLocamotos:user');
       }
     }
     setLoading(false);
@@ -65,8 +84,21 @@ export function AuthProvider({ children }) {
     // Armazenar o objeto decodificado garante que o nome estará lá
     localStorage.setItem('@SaquaLocamotos:user', JSON.stringify(userData));
 
-    setUser(userData);
+    persistUser(userData);
     return userData;
+  };
+
+  const updateUser = (dataOrUpdater) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser;
+
+      const nextUser = typeof dataOrUpdater === 'function'
+        ? dataOrUpdater(currentUser)
+        : { ...currentUser, ...dataOrUpdater };
+
+      localStorage.setItem('@SaquaLocamotos:user', JSON.stringify(nextUser));
+      return nextUser;
+    });
   };
 
   const logout = () => {
@@ -76,7 +108,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ signed: !!user, user, loading, login, logout }}>
+    <AuthContext.Provider value={{ signed: !!user, user, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

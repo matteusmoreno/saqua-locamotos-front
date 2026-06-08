@@ -1,301 +1,807 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { 
-  User, Lock, Camera, Save, ShieldCheck, Mail, Loader2, 
-  Image as ImageIcon, KeyRound, ShieldAlert
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Image as ImageIcon,
+  KeyRound,
+  Loader2,
+  Lock,
+  Mail,
+  RefreshCw,
+  Save,
+  Send,
+  ShieldCheck,
+  ShieldX,
+  Upload,
+  User,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Importe o seu contexto de autenticação e serviço de utilizador
 import { useAuth } from '../../context/AuthContext';
-import { UserService } from '../../services/userService'; // ou AuthService, dependendo de onde estiver a sua API
+import { useConfirm } from '../../context/ConfirmContext';
+import { UserService } from '../../services/userService';
 
-export function AdminProfile() {
-  const { user, login } = useAuth(); // Assume-se que tem uma forma de atualizar o contexto
-  const fileInputRef = useRef(null);
+function formatDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
 
-  // Form para Dados Pessoais
-  const { register: regPersonal, handleSubmit: handlePersonal, reset: resetPersonal } = useForm();
-  
-  // Form para Troca de Senha
-  const { 
-    register: regPass, 
-    handleSubmit: handlePass, 
-    reset: resetPass, 
-    watch: watchPass, 
-    formState: { errors: errorsPass } 
-  } = useForm();
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 
-  // Estados
-  const [isSubmittingPersonal, setIsSubmittingPersonal] = useState(false);
-  const [isSubmittingPass, setIsSubmittingPass] = useState(false);
-  const [isUploadingPic, setIsUploadingPic] = useState(false);
-  const [profilePic, setProfilePic] = useState(null);
-
-  // Preenche os dados quando o componente monta
-  useEffect(() => {
-    if (user) {
-      resetPersonal({
-        name: user.name || '',
-        email: user.email || '',
-      });
-      setProfilePic(user.pictureUrl || null);
-    }
-  }, [user, resetPersonal]);
-
-  // --- HANDLERS ---
-
-  const handlePictureUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsUploadingPic(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      // Substitua pelo seu endpoint real de upload de foto do admin
-      const response = await UserService.uploadPicture(user.id || user.userId, formData);
-      setProfilePic(response.data.pictureUrl);
-      toast.success('Foto de perfil atualizada com sucesso!');
-      
-      // Opcional: Atualizar o contexto global de auth com a nova foto
-      // login({ ...user, pictureUrl: response.data.pictureUrl });
-      
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao fazer upload da imagem.');
-    } finally {
-      setIsUploadingPic(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const onPersonalSubmit = async (data) => {
-    setIsSubmittingPersonal(true);
-    try {
-      // Substitua pelo seu endpoint real de atualização de perfil
-      const payload = {
-        userId: user.id || user.userId,
-        name: data.name,
-        email: data.email,
-      };
-      
-      await UserService.updateAdminProfile(payload);
-      toast.success('Dados pessoais atualizados com sucesso!');
-      
-      // Opcional: Atualizar o contexto global de auth
-      // login({ ...user, name: data.name, email: data.email });
-      
-    } catch (error) {
-      toast.error('Erro ao atualizar os dados pessoais.');
-    } finally {
-      setIsSubmittingPersonal(false);
-    }
-  };
-
-  const onPassSubmit = async (data) => {
-    setIsSubmittingPass(true);
-    try {
-      // Substitua pelo seu endpoint real de troca de senha
-      const payload = {
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
-      };
-      
-      await UserService.changePassword(payload);
-      toast.success('Senha alterada com sucesso! Utilize-a no próximo login.');
-      resetPass(); // Limpa o formulário de senha
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Erro ao alterar a senha. Verifique a sua senha atual.');
-    } finally {
-      setIsSubmittingPass(false);
-    }
-  };
-
-  const inputClassName = "w-full bg-gray-darker border border-gray-mid focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/50 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 transition-all outline-none";
+function Modal({ isOpen, title, subtitle, onClose, children, footer }) {
+  if (!isOpen) return null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-10">
-      
-      {/* HEADER */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }} 
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4"
-      >
-        <div>
-          <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
-            <ShieldCheck className="text-brand-gold" size={32} />
-            Meu Perfil
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Gira as suas informações pessoais, fotografia e configurações de segurança.
-          </p>
-        </div>
-      </motion.div>
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[990] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black-pure/80 backdrop-blur-sm"
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* COLUNA ESQUERDA: PERFIL & DADOS PESSOAIS */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }} 
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="lg:col-span-1 flex flex-col gap-6"
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.98 }}
+          className="relative w-full max-w-xl rounded-3xl border border-gray-mid bg-black-rich shadow-2xl overflow-hidden"
         >
-          {/* CARD DO AVATAR */}
-          <div className="bg-black-rich border border-gray-mid rounded-3xl p-8 text-center shadow-lg relative overflow-hidden group">
-            {/* Efeito visual de fundo */}
-            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-brand-gold/10 to-transparent border-b border-gray-mid/30"></div>
-            
-            <div className="relative inline-block mb-5 mx-auto mt-4">
-              <div className="w-36 h-36 rounded-full border-4 border-black-rich overflow-hidden bg-gray-darker flex items-center justify-center relative shadow-[0_0_20px_rgba(250,204,21,0.15)] group-hover:border-brand-gold/50 group-hover:shadow-[0_0_30px_rgba(250,204,21,0.3)] transition-all duration-300">
-                {isUploadingPic ? (
-                  <Loader2 size={32} className="animate-spin text-brand-gold" />
-                ) : profilePic ? (
-                  <img src={profilePic} alt="Perfil Admin" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon size={48} className="text-gray-600" />
-                )}
-                
-                {!isUploadingPic && (
-                  <div 
-                    onClick={() => fileInputRef.current?.click()} 
-                    className="absolute inset-0 bg-black-pure/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-sm"
-                  >
-                    <Camera size={28} className="text-brand-gold mb-2" />
-                    <span className="text-xs uppercase font-bold tracking-wider text-white">Trocar Foto</span>
-                  </div>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePictureUpload}/>
+          <div className="flex items-start justify-between gap-4 border-b border-gray-mid/60 p-6">
+            <div>
+              <h3 className="text-xl font-black text-white">{title}</h3>
+              {subtitle && <p className="mt-1 text-sm text-gray-400">{subtitle}</p>}
             </div>
-            
-            <h2 className="text-2xl font-black text-white truncate relative z-10">{user?.name || 'Administrador'}</h2>
-            <div className="flex items-center justify-center gap-2 mt-3 relative z-10">
-              <span className="px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg bg-brand-gold/10 text-brand-gold border border-brand-gold/20 flex items-center gap-1.5">
-                <ShieldCheck size={12} /> Master Admin
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-gray-mid p-2 text-gray-400 hover:text-white hover:bg-gray-darker transition-colors"
+            >
+              <X size={16} />
+            </button>
           </div>
 
-          {/* FORM: DADOS PESSOAIS */}
-          <form onSubmit={handlePersonal(onPersonalSubmit)} className="bg-black-rich border border-gray-mid rounded-3xl p-6 shadow-lg flex-1 flex flex-col">
-            <div className="flex items-center gap-3 mb-6 pb-2 border-b border-gray-mid/50">
-              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400"><User size={18} /></div>
-              <h3 className="text-lg font-bold text-white">Dados Pessoais</h3>
-            </div>
+          <div className="p-6">{children}</div>
+          {footer && <div className="p-6 pt-0">{footer}</div>}
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
 
-            <div className="space-y-5 mb-8">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-gray-400">Nome de Exibição</label>
-                <input {...regPersonal('name', { required: true })} className={inputClassName} placeholder="Seu nome" />
-              </div>
-              
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-gray-400">E-mail de Acesso</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500"><Mail size={18} /></div>
-                  <input type="email" {...regPersonal('email', { required: true })} className={`${inputClassName} pl-11`} placeholder="admin@saqualocamotos.com" />
+function StatusBadge({ verified }) {
+  if (verified) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-green-400">
+        <CheckCircle2 size={14} /> Verificado
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-red">
+      <ShieldX size={14} /> Nao verificado
+    </span>
+  );
+}
+
+export function AdminProfile() {
+  const { user, updateUser } = useAuth();
+  const { confirm } = useConfirm();
+
+  const userId = user?.id || user?.userId;
+  const photoInputRef = useRef(null);
+
+  const {
+    register: registerProfile,
+    handleSubmit: submitProfile,
+    reset: resetProfile,
+    watch: watchProfile,
+    formState: { errors: profileErrors },
+  } = useForm();
+
+  const {
+    register: registerPassword,
+    handleSubmit: submitPassword,
+    reset: resetPassword,
+    watch: watchPassword,
+    formState: { errors: passwordErrors },
+  } = useForm();
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [verifyingToken, setVerifyingToken] = useState(false);
+
+  const [profile, setProfile] = useState(null);
+  const [profilePic, setProfilePic] = useState('');
+  const [token, setToken] = useState('');
+
+  const [activeTab, setActiveTab] = useState('profile');
+
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const emailVerified = Boolean(profile?.emailVerified);
+
+  const inputClass =
+    'w-full rounded-xl border border-gray-mid bg-gray-darker px-4 py-3 text-white placeholder:text-gray-500 outline-none transition-all focus:border-brand-gold focus:ring-1 focus:ring-brand-gold/50';
+
+  const canSubmitProfile = useMemo(
+    () => !!userId && !savingProfile && !refreshing,
+    [userId, savingProfile, refreshing]
+  );
+
+  const canSubmitPassword = useMemo(
+    () => !!userId && !savingPassword && !refreshing,
+    [userId, savingPassword, refreshing]
+  );
+
+  const loadProfile = async (showToast = false) => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (showToast) setRefreshing(true);
+      const response = await UserService.getUserById(userId);
+      const data = response.data || {};
+
+      setProfile(data);
+      setProfilePic(data.pictureUrl || '');
+
+      resetProfile({
+        name: data.name || user?.name || '',
+        email: data.email || user?.email || '',
+      });
+
+      updateUser?.((current) => ({
+        ...current,
+        name: data.name || current?.name,
+        email: data.email || current?.email,
+        pictureUrl: data.pictureUrl ?? current?.pictureUrl,
+        emailVerified: data.emailVerified ?? current?.emailVerified,
+      }));
+
+      if (showToast) toast.success('Perfil atualizado.');
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao carregar dados do perfil.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile(false);
+  }, [userId]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const openPhotoModal = () => {
+    setPhotoFile(null);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview('');
+    setPhotoModalOpen(true);
+  };
+
+  const onSelectPhoto = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleUploadPhoto = async () => {
+    if (!photoFile || !userId) return;
+
+    const ok = await confirm({
+      title: 'Confirmar nova foto',
+      message: 'Deseja aplicar esta nova foto de perfil?',
+      confirmText: 'Aplicar foto',
+      cancelText: 'Cancelar',
+    });
+
+    if (!ok) return;
+
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', photoFile);
+      const response = await UserService.uploadPicture(userId, formData);
+
+      const nextPicture = response.data?.pictureUrl || '';
+      setProfilePic(nextPicture);
+      setProfile((prev) => ({ ...(prev || {}), pictureUrl: nextPicture }));
+      updateUser?.({ pictureUrl: nextPicture });
+
+      setPhotoModalOpen(false);
+      toast.success('Foto atualizada com sucesso.');
+    } catch (error) {
+      console.error(error);
+      await confirm({
+        title: 'Erro no upload',
+        message: error.response?.data?.message || 'Nao foi possivel enviar a foto agora.',
+        confirmText: 'Fechar',
+        cancelText: 'Ok',
+        isDanger: true,
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveProfile = async (data) => {
+    if (!userId) return;
+
+    const ok = await confirm({
+      title: 'Salvar dados do perfil?',
+      message: 'As informacoes serao atualizadas imediatamente.',
+      confirmText: 'Salvar',
+      cancelText: 'Cancelar',
+    });
+
+    if (!ok) return;
+
+    setSavingProfile(true);
+    try {
+      const response = await UserService.updateProfile({
+        userId,
+        name: data.name,
+        email: data.email,
+      });
+
+      const updated = response.data || {};
+      setProfile((prev) => ({ ...(prev || {}), ...updated }));
+      updateUser?.({
+        name: updated.name || data.name,
+        email: updated.email || data.email,
+        emailVerified: updated.emailVerified ?? profile?.emailVerified,
+      });
+
+      toast.success('Dados pessoais salvos.');
+    } catch (error) {
+      console.error(error);
+      await confirm({
+        title: 'Erro ao salvar perfil',
+        message: error.response?.data?.message || 'Falha ao salvar dados pessoais.',
+        confirmText: 'Fechar',
+        cancelText: 'Ok',
+        isDanger: true,
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleSavePassword = async (data) => {
+    if (!userId) return;
+
+    const ok = await confirm({
+      title: 'Confirmar alteracao de senha',
+      message: 'Deseja atualizar a senha desta conta agora?',
+      confirmText: 'Atualizar senha',
+      cancelText: 'Cancelar',
+      isDanger: true,
+    });
+
+    if (!ok) return;
+
+    setSavingPassword(true);
+    try {
+      await UserService.updatePassword({
+        userId,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+
+      resetPassword();
+      toast.success('Senha atualizada com sucesso.');
+    } catch (error) {
+      console.error(error);
+      await confirm({
+        title: 'Erro ao atualizar senha',
+        message: error.response?.data?.message || 'Nao foi possivel alterar a senha.',
+        confirmText: 'Fechar',
+        cancelText: 'Ok',
+        isDanger: true,
+      });
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleSendVerification = async () => {
+    if (!userId) return;
+
+    const ok = await confirm({
+      title: 'Enviar verificacao de e-mail',
+      message: 'Um novo codigo sera enviado para o e-mail cadastrado.',
+      confirmText: 'Enviar codigo',
+      cancelText: 'Cancelar',
+    });
+
+    if (!ok) return;
+
+    setSendingVerification(true);
+    try {
+      await UserService.sendVerificationEmail(userId);
+      toast.success('Codigo enviado por e-mail.');
+      setActiveTab('verification');
+    } catch (error) {
+      console.error(error);
+      await confirm({
+        title: 'Erro ao enviar verificacao',
+        message: error.response?.data?.message || 'Nao foi possivel enviar o codigo agora.',
+        confirmText: 'Fechar',
+        cancelText: 'Ok',
+        isDanger: true,
+      });
+    } finally {
+      setSendingVerification(false);
+    }
+  };
+
+  const handleValidateToken = async () => {
+    const cleanToken = token.trim();
+    if (!cleanToken) {
+      await confirm({
+        title: 'Token obrigatorio',
+        message: 'Informe o token recebido por e-mail para validar a conta.',
+        confirmText: 'Entendi',
+        cancelText: 'Fechar',
+        isDanger: true,
+      });
+      return;
+    }
+
+    setVerifyingToken(true);
+    try {
+      await UserService.verifyEmailToken(cleanToken);
+      setToken('');
+      await loadProfile(false);
+      toast.success('E-mail validado com sucesso.');
+    } catch (error) {
+      console.error(error);
+      await confirm({
+        title: 'Token invalido',
+        message: error.response?.data?.message || 'Token invalido ou expirado.',
+        confirmText: 'Fechar',
+        cancelText: 'Ok',
+        isDanger: true,
+      });
+    } finally {
+      setVerifyingToken(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <Loader2 size={46} className="mb-4 animate-spin text-brand-gold" />
+        <p className="text-gray-400">A carregar perfil do administrador...</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mx-auto max-w-7xl space-y-8 pb-10">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <h1 className="mb-2 flex items-center gap-3 text-3xl font-black text-white">
+              <ShieldCheck size={30} className="text-brand-gold" />
+              Central de Perfil
+            </h1>
+            <p className="text-sm text-gray-400">
+              Gestão profissional de conta, segurança e verificação de identidade.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => loadProfile(true)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-mid bg-gray-darker px-4 py-2.5 font-semibold text-gray-200 transition-colors hover:bg-gray-dark disabled:opacity-60"
+          >
+            {refreshing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Atualizar dados
+          </button>
+        </motion.div>
+
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-12">
+          <motion.aside
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="xl:col-span-4"
+          >
+            <div className="overflow-hidden rounded-3xl border border-gray-mid bg-black-rich shadow-lg">
+              <div className="h-28 border-b border-gray-mid/50 bg-gradient-to-r from-brand-gold/25 via-brand-gold/8 to-transparent" />
+
+              <div className="px-6 pb-6 -mt-12">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-2 border-black-rich bg-gray-darker shadow-[0_0_16px_rgba(250,204,21,0.18)]">
+                    {profilePic ? (
+                      <img src={profilePic} alt="Perfil" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon size={34} className="text-gray-600" />
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={openPhotoModal}
+                    className="mt-11 inline-flex items-center gap-2 rounded-lg border border-gray-mid bg-gray-darker px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-gray-200 transition-colors hover:bg-gray-dark"
+                  >
+                    <Upload size={13} /> Trocar foto
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  <h2 className="truncate text-2xl font-black text-white">
+                    {watchProfile('name') || user?.name || 'Administrador'}
+                  </h2>
+                  <p className="mt-1 truncate text-sm text-gray-400">
+                    {watchProfile('email') || user?.email || 'Sem e-mail'}
+                  </p>
+                </div>
+
+                <div className="mt-3">
+                  {emailVerified ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-green-400">
+                      <CheckCircle2 size={14} /> Verificado
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-brand-red/30 bg-brand-red/10 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-red">
+                      <ShieldX size={14} /> Não verificado
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-5 space-y-2.5">
+                  <div className="flex items-center justify-between rounded-xl border border-gray-mid/60 bg-gray-darker/50 px-3 py-2.5 text-xs">
+                    <span className="flex items-center gap-1.5 text-gray-500">Criado em</span>
+                    <span className="font-semibold text-gray-200">{formatDate(profile?.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border border-gray-mid/60 bg-gray-darker/50 px-3 py-2.5 text-xs">
+                    <span className="flex items-center gap-1.5 text-gray-500">Atualizado em</span>
+                    <span className="font-semibold text-gray-200">{formatDate(profile?.updatedAt)}</span>
+                  </div>
                 </div>
               </div>
             </div>
+          </motion.aside>
 
-            <button 
-              type="submit" 
-              disabled={isSubmittingPersonal} 
-              className="mt-auto w-full flex items-center justify-center gap-2 bg-gray-dark hover:bg-gray-mid text-white py-3.5 rounded-xl font-bold transition-all border border-gray-mid/50 disabled:opacity-50"
+          <motion.section
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="xl:col-span-8 space-y-6"
+          >
+            <div className="rounded-2xl border border-gray-mid bg-black-rich p-2 shadow-lg">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('profile')}
+                  className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+                    activeTab === 'profile'
+                      ? 'bg-brand-gold text-black-pure'
+                      : 'bg-gray-darker text-gray-300 hover:bg-gray-dark'
+                  }`}
+                >
+                  Perfil
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('security')}
+                  className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+                    activeTab === 'security'
+                      ? 'bg-brand-gold text-black-pure'
+                      : 'bg-gray-darker text-gray-300 hover:bg-gray-dark'
+                  }`}
+                >
+                  Segurança
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('verification')}
+                  className={`rounded-xl px-4 py-3 text-sm font-bold transition-colors ${
+                    activeTab === 'verification'
+                      ? 'bg-brand-gold text-black-pure'
+                      : 'bg-gray-darker text-gray-300 hover:bg-gray-dark'
+                  }`}
+                >
+                  Verificação
+                </button>
+              </div>
+            </div>
+
+            {activeTab === 'profile' && (
+              <form onSubmit={submitProfile(handleSaveProfile)} className="rounded-3xl border border-gray-mid bg-black-rich p-6 sm:p-8 shadow-lg">
+                <div className="mb-6 border-b border-gray-mid/50 pb-3">
+                  <h3 className="text-lg font-bold text-white">Informações pessoais</h3>
+                  <p className="text-sm text-gray-400">Atualize nome e e-mail de acesso da conta administrativa.</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-bold text-gray-400">Nome de exibição</label>
+                    <input
+                      {...registerProfile('name', {
+                        required: 'O nome é obrigatório.',
+                        minLength: { value: 3, message: 'Use no mínimo 3 caracteres.' },
+                      })}
+                      className={inputClass}
+                      placeholder="Seu nome"
+                    />
+                    {profileErrors.name && (
+                      <span className="mt-1 text-xs font-medium text-brand-red">{profileErrors.name.message}</span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-bold text-gray-400">E-mail de acesso</label>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500">
+                        <Mail size={18} />
+                      </div>
+                      <input
+                        type="email"
+                        {...registerProfile('email', {
+                          required: 'O e-mail é obrigatório.',
+                          pattern: {
+                            value: /^\S+@\S+\.\S+$/,
+                            message: 'Informe um e-mail válido.',
+                          },
+                        })}
+                        className={`${inputClass} pl-11`}
+                        placeholder="admin@saqualocamotos.com"
+                      />
+                    </div>
+                    {profileErrors.email && (
+                      <span className="mt-1 text-xs font-medium text-brand-red">{profileErrors.email.message}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end border-t border-gray-mid/50 pt-6">
+                  <button
+                    type="submit"
+                    disabled={!canSubmitProfile}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-7 py-3 font-black text-black-pure transition-all hover:bg-brand-gold-hover disabled:opacity-50"
+                  >
+                    {savingProfile ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                    Salvar perfil
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'security' && (
+              <form onSubmit={submitPassword(handleSavePassword)} className="relative overflow-hidden rounded-3xl border border-brand-red/20 bg-black-rich p-6 sm:p-8 shadow-lg">
+                <Lock className="pointer-events-none absolute -bottom-10 -right-10 h-64 w-64 text-brand-red opacity-5" />
+
+                <div className="relative z-10 mb-6 border-b border-gray-mid/50 pb-3">
+                  <h3 className="text-lg font-bold text-white">Segurança da conta</h3>
+                  <p className="text-sm text-gray-400">Atualize a senha com confirmação de ação crítica.</p>
+                </div>
+
+                <div className="relative z-10 space-y-5">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-bold text-gray-400">Senha atual</label>
+                    <input
+                      type="password"
+                      {...registerPassword('currentPassword', { required: 'A senha atual é obrigatória.' })}
+                      className={inputClass}
+                      placeholder="••••••••"
+                    />
+                    {passwordErrors.currentPassword && (
+                      <span className="mt-1 text-xs font-medium text-brand-red">{passwordErrors.currentPassword.message}</span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-400">Nova senha</label>
+                      <input
+                        type="password"
+                        {...registerPassword('newPassword', {
+                          required: 'A nova senha é obrigatória.',
+                          minLength: { value: 6, message: 'A senha deve ter pelo menos 6 caracteres.' },
+                        })}
+                        className={inputClass}
+                        placeholder="Mínimo 6 caracteres"
+                      />
+                      {passwordErrors.newPassword && (
+                        <span className="mt-1 text-xs font-medium text-brand-red">{passwordErrors.newPassword.message}</span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-sm font-bold text-gray-400">Confirmar nova senha</label>
+                      <input
+                        type="password"
+                        {...registerPassword('confirmPassword', {
+                          required: 'Confirme a nova senha.',
+                          validate: (value) => {
+                            if (watchPassword('newPassword') !== value) {
+                              return 'As senhas não coincidem.';
+                            }
+                            return true;
+                          },
+                        })}
+                        className={inputClass}
+                        placeholder="Repita a nova senha"
+                      />
+                      {passwordErrors.confirmPassword && (
+                        <span className="mt-1 flex items-center gap-1 text-xs font-medium text-brand-red">
+                          <ShieldAlert size={14} /> {passwordErrors.confirmPassword.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative z-10 mt-6 flex justify-end border-t border-gray-mid/50 pt-6">
+                  <button
+                    type="submit"
+                    disabled={!canSubmitPassword}
+                    className="inline-flex items-center gap-2 rounded-xl border border-brand-red/30 bg-brand-red/10 px-8 py-3 font-bold text-brand-red transition-all hover:border-brand-red hover:bg-brand-red hover:text-white disabled:opacity-50"
+                  >
+                    {savingPassword ? <Loader2 size={20} className="animate-spin" /> : <KeyRound size={20} />}
+                    Atualizar senha
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'verification' && (
+              <section className="rounded-3xl border border-gray-mid bg-black-rich p-6 sm:p-8 shadow-lg">
+                <div className="mb-6 border-b border-gray-mid/50 pb-3">
+                  <h3 className="text-lg font-bold text-white">Verificação de e-mail</h3>
+                  <p className="text-sm text-gray-400">Envie um novo código e valide o token recebido.</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div className="rounded-2xl border border-gray-mid/70 bg-gray-darker/40 p-4">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Status atual</p>
+                    <StatusBadge verified={emailVerified} />
+                    <p className="mt-3 text-sm text-gray-400">
+                      {emailVerified
+                        ? 'Conta já verificada. Nenhuma ação pendente.'
+                        : 'Conta ainda não verificada. Solicite um novo código e valide abaixo.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={handleSendVerification}
+                      disabled={emailVerified || sendingVerification || verifyingToken}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-gold/30 bg-brand-gold/10 px-4 py-3 font-bold text-brand-gold transition-all hover:bg-brand-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {sendingVerification ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                      Enviar novo código
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleValidateToken}
+                      disabled={emailVerified || verifyingToken || sendingVerification}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 font-bold text-green-400 transition-all hover:bg-green-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {verifyingToken ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                      Validar token
+                    </button>
+                  </div>
+
+                  {!emailVerified && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-gray-400">Token de verificação</label>
+                      <input
+                        type="text"
+                        value={token}
+                        onChange={(event) => setToken(event.target.value)}
+                        className={inputClass}
+                        placeholder="Cole o token recebido por e-mail"
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+          </motion.section>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={photoModalOpen}
+        onClose={() => setPhotoModalOpen(false)}
+        title="Trocar foto de perfil"
+        subtitle="Selecione uma imagem e confirme a alteração."
+        footer={
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setPhotoModalOpen(false)}
+              className="rounded-xl px-5 py-2.5 font-bold text-gray-300 transition-colors hover:bg-gray-darker hover:text-white"
             >
-              {isSubmittingPersonal ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
-              Guardar Perfil
+              Cancelar
             </button>
-          </form>
-        </motion.div>
-
-        {/* COLUNA DIREITA: SEGURANÇA */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }} 
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-2 h-full"
-        >
-          <form onSubmit={handlePass(onPassSubmit)} className="bg-black-rich border border-brand-red/20 rounded-3xl p-6 sm:p-10 shadow-lg h-full flex flex-col relative overflow-hidden group">
-            
-            <Lock className="absolute -bottom-10 -right-10 w-64 h-64 opacity-5 text-brand-red transform group-hover:scale-110 transition-transform duration-700 pointer-events-none" />
-
-            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-gray-mid/50 relative z-10">
-              <div className="p-3 bg-brand-red/10 rounded-xl text-brand-red border border-brand-red/20"><KeyRound size={24} /></div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Segurança da Conta</h3>
-                <p className="text-sm text-gray-400">Mantenha a sua senha atualizada para garantir a segurança do sistema.</p>
-              </div>
-            </div>
-
-            <div className="space-y-6 max-w-lg relative z-10">
-              
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-gray-400">Senha Atual</label>
-                <input 
-                  type="password" 
-                  {...regPass('currentPassword', { required: "A senha atual é obrigatória para fazer a alteração." })} 
-                  className={inputClassName} 
-                  placeholder="••••••••" 
-                />
-                {errorsPass.currentPassword && <span className="text-xs text-brand-red font-medium mt-1">{errorsPass.currentPassword.message}</span>}
+            <button
+              type="button"
+              onClick={handleUploadPhoto}
+              disabled={!photoFile || uploadingPhoto}
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/30 bg-brand-gold/10 px-5 py-2.5 font-bold text-brand-gold transition-colors hover:bg-brand-gold/20 disabled:opacity-50"
+            >
+              {uploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              Confirmar upload
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-dashed border-gray-mid bg-gray-darker/60 p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-gray-mid bg-black-pure">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : profilePic ? (
+                  <img src={profilePic} alt="Atual" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon size={26} className="text-gray-600" />
+                )}
               </div>
 
-              <div className="pt-4 border-t border-gray-mid/30"></div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-gray-400">Nova Senha</label>
-                <input 
-                  type="password" 
-                  {...regPass('newPassword', { 
-                    required: "A nova senha é obrigatória.",
-                    minLength: { value: 6, message: "A senha deve ter pelo menos 6 caracteres." }
-                  })} 
-                  className={inputClassName} 
-                  placeholder="Mínimo 6 caracteres" 
-                />
-                {errorsPass.newPassword && <span className="text-xs text-brand-red font-medium mt-1">{errorsPass.newPassword.message}</span>}
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-300">Imagem de perfil</p>
+                <p className="mt-1 text-xs text-gray-500">Formatos sugeridos: JPG ou PNG.</p>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-gray-400">Confirmar Nova Senha</label>
-                <input 
-                  type="password" 
-                  {...regPass('confirmPassword', { 
-                    required: "Confirme a sua nova senha.",
-                    validate: (val) => {
-                      if (watchPass('newPassword') != val) {
-                        return "As senhas não coincidem.";
-                      }
-                    }
-                  })} 
-                  className={inputClassName} 
-                  placeholder="Repita a nova senha" 
-                />
-                {errorsPass.confirmPassword && <span className="text-xs text-brand-red font-medium mt-1 flex items-center gap-1"><ShieldAlert size={14}/> {errorsPass.confirmPassword.message}</span>}
-              </div>
-              
-            </div>
-
-            <div className="mt-auto pt-8 flex justify-end relative z-10">
-              <button 
-                type="submit" 
-                disabled={isSubmittingPass} 
-                className="flex items-center gap-2 bg-brand-red/10 hover:bg-brand-red text-brand-red hover:text-white border border-brand-red/30 hover:border-brand-red px-8 py-3.5 rounded-xl font-bold transition-all disabled:opacity-50"
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="rounded-lg border border-gray-mid bg-black-pure px-3.5 py-2 text-xs font-bold uppercase tracking-wider text-gray-200 transition-colors hover:bg-gray-dark"
               >
-                {isSubmittingPass ? <Loader2 size={20} className="animate-spin" /> : <Lock size={20} />} 
-                Atualizar Senha
+                Escolher
               </button>
             </div>
-          </form>
-        </motion.div>
-
-      </div>
-    </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onSelectPhoto}
+            />
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
